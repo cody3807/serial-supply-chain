@@ -135,8 +135,8 @@ class TwoStageSupplyChainModel(Model):
         B1 = B1 + D - sales
 
         # (6) costs & rewards
-        H1 = (params.H1 + params.H2) * I1 + params.ALPHA * params.P_BO * B1
-        H2 = params.H2 * (I2 + U1) + (1.0 - params.ALPHA) * params.P_BO * B1
+        H1 = (params.H1 + params.H2) * I1 + params.ALPHA * params.P_BO * B1 + self.sigma_principal*O1 - self.p_price * sales
+        H2 = params.H2 * (I2 + U1) + (1.0 - params.ALPHA) * params.P_BO * B1+params.P_BO *B2 - self.beta_principal*O1 + params.k*(self.x_operations)**2
         total_cost = float(H1 + H2)
 
         # Commit
@@ -155,8 +155,11 @@ class TwoStageSupplyChainModel(Model):
         self.sales = sales
         self.cost_H1 = float(H1)
         self.cost_H2 = float(H2)
+        self.reward_marketing = -float(H1)
+        self.reward_operations = -float(H2)
+        self.reward_principle = -float(H1 + H2)
 
-        return -float(H1), -float(H2)
+        return -float(H1 + H2), -float(H1), -float(H2)
 
     # Simulate one round
     def step(self):
@@ -180,13 +183,16 @@ class TwoStageSupplyChainModel(Model):
         self.x_operations = x
 
         # (2) Market dynamics
-        r1, r2 = self.env_step(s1, s2)
+        principal_reward, r1, r2 = self.env_step(s1, s2)
 
         # (3) Agents receive reward signals
-        self.rewards[self.agents[0]] = r1
-        self.agents[0].reward = r1
-        self.rewards[self.agents[1]] = r2
-        self.agents[1].reward = r2
+        self.rewards[self.agents[0]] = principal_reward
+        self.agents[0].reward = principal_reward
+        self.rewards[self.agents[1]] = r1
+        self.agents[1].reward = r1
+        self.rewards[self.agents[2]] = r2
+        self.agents[2].reward = r2
+        self.principal_reward = principal_reward
         self.reward_marketing = r1
         self.reward_operations = r2
 
@@ -195,8 +201,9 @@ class TwoStageSupplyChainModel(Model):
         self.t += 1
 
         # Agent reporters
-        self.agents[0].reward_cum = self.agents[0].reward_cum + r1
-        self.agents[1].reward_cum = self.agents[1].reward_cum + r2
+        self.agents[0].reward_cum = self.agents[0].reward_cum + principal_reward
+        self.agents[1].reward_cum = self.agents[1].reward_cum + r1
+        self.agents[2].reward_cum = self.agents[2].reward_cum + r2
 
         # Model reporters
         self.joint_reg_opt = self.last_total_cost - params.CTOT_OPT

@@ -8,7 +8,7 @@ from centralsolver import compute_supply_optimum_local
 # Cost structure
 H1 = 0.5          
 H2 = 0.5          
-P_BO = 5.0        
+P_BO = 50       
 ALPHA = 0.5       
 
 # End-customer demand
@@ -18,7 +18,8 @@ b=3
 std_dev = 10
 p = [5,7,9,11,13,15]
 
-
+# production cost
+k = 4
 def sample_demand(rng,p):
  
     """One draw of consumer demand D_t ~ Poisson(LAM)"""
