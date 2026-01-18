@@ -41,6 +41,27 @@ class TwoStageSupplyChainModel(Model):
         self.last_total_cost = 0.0
         self.joint_reg_opt = 0.0
         self.joint_reg_opt_cum = 0.0
+        
+        # Decision variables
+        self.sigma_principal = 0
+        self.beta_principal = 0
+        self.s1_marketing = 0
+        self.p_price = 0
+        self.s2_operations = 0
+        self.x_operations = 0
+        
+        # State variables for reporting
+        self.demand = 0
+        self.sales = 0
+        self.shipment = 0
+        self.order_1 = 0
+        self.order_2 = 0
+        self.inventory_position_1 = 0
+        self.inventory_position_2 = 0
+        self.cost_H1 = 0.0
+        self.cost_H2 = 0.0
+        self.reward_marketing = 0.0
+        self.reward_operations = 0.0
 
         # Initialize DataCollector
         self.datacollector = DataCollector(
@@ -48,6 +69,29 @@ class TwoStageSupplyChainModel(Model):
                 "Total Cost": "last_total_cost",
                 "Joint Regret Opt": "joint_reg_opt",
                 "Cumulative Regret Opt": "joint_reg_opt_cum",
+                "Sigma (Principal)": "sigma_principal",
+                "Beta (Principal)": "beta_principal",
+                "S1 (Marketing)": "s1_marketing",
+                "Price": "p_price",
+                "S2 (Operations)": "s2_operations",
+                "X (Operations)": "x_operations",
+                "I1 (Marketing Inventory)": "I1",
+                "I2 (Operations Inventory)": "I2",
+                "B1 (Marketing Backorder)": "B1",
+                "B2 (Operations Backorder)": "B2",
+                "U1 (Units in Transit to Marketing)": "U1_prev",
+                "U2 (Units in Transit to Operations)": "U2_prev",
+                "IP1 (Marketing Inventory Position)": "inventory_position_1",
+                "IP2 (Operations Inventory Position)": "inventory_position_2",
+                "Demand": "demand",
+                "Sales": "sales",
+                "Shipment": "shipment",
+                "O1 (Marketing Order)": "order_1",
+                "O2 (Operations Order)": "order_2",
+                "H1 (Marketing Cost)": "cost_H1",
+                "H2 (Operations Cost)": "cost_H2",
+                "R1 (Marketing Reward)": "reward_marketing",
+                "R2 (Operations Reward)": "reward_operations",
             },
             agent_reporters={
                 "Base Stock Level": "action",
@@ -100,6 +144,17 @@ class TwoStageSupplyChainModel(Model):
         self.B1, self.B2 = B1, B2
         self.U1_prev, self.U2_prev = U1, U2
         self.last_total_cost = total_cost
+        
+        # Store state variables for reporting
+        self.inventory_position_1 = IP1
+        self.inventory_position_2 = IP2
+        self.order_1 = O1
+        self.order_2 = O2
+        self.shipment = ship
+        self.demand = D
+        self.sales = sales
+        self.cost_H1 = float(H1)
+        self.cost_H2 = float(H2)
 
         return -float(H1), -float(H2)
 
@@ -109,14 +164,20 @@ class TwoStageSupplyChainModel(Model):
         # (1) Agents choose base stock levels
         #self.agents.shuffle_do("select_action")
         self.agents[0].select_action()
-        sigma_principal= self.agents[0].action[0]
-        beta_principal= self.agents[0].action[1]
+        self.sigma_principal = self.agents[0].action[0]
+        self.beta_principal = self.agents[0].action[1]
         self.agents[1].select_action()
         self.agents[2].select_action()
         # Get selected actions from agents
         #1 marketing ,2 operations
-        s1,p = int(self.agents[1].action[0]),int(self.agents[1].action[1])
-        s2,x = int(self.agents[2].action[0]),int(self.agents[2].action[1])
+        s1, p = int(self.agents[1].action[0]), int(self.agents[1].action[1])
+        s2, x = int(self.agents[2].action[0]), int(self.agents[2].action[1])
+        
+        # Store decision variables for reporting
+        self.s1_marketing = s1
+        self.p_price = p
+        self.s2_operations = s2
+        self.x_operations = x
 
         # (2) Market dynamics
         r1, r2 = self.env_step(s1, s2)
@@ -126,6 +187,8 @@ class TwoStageSupplyChainModel(Model):
         self.agents[0].reward = r1
         self.rewards[self.agents[1]] = r2
         self.agents[1].reward = r2
+        self.reward_marketing = r1
+        self.reward_operations = r2
 
         # (4) Learning
         self.agents.shuffle_do("update_belief")

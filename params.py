@@ -55,7 +55,7 @@ def epsilon_at(t, rounds):
     return (1.0 - frac) * EPS_START + frac * EPS_END
 
 # Simulation control
-ROUNDS = 365
+ROUNDS = 3650
 SEED   = 42
 
 #Action space for marketing
