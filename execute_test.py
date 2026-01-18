@@ -3,7 +3,7 @@ from model import TwoStageSupplyChainModel
 import params
 
 # Example model 
-model = TwoStageSupplyChainModel(agent_types=("greedy","greedy"))
+model = TwoStageSupplyChainModel(agent_types=("greedy_p","greedy_m","greedy_o"))
 for _ in range(params.ROUNDS):
     model.step()
 

@@ -2,21 +2,24 @@ import numpy as np
 from mesa import Model
 from mesa.datacollection import DataCollector
 
-from agents import GreedyAgent, UcbAgent
+from agents import GreedyAgent, GreedyMAgent, GreedyOAgent, GreedyPAgent, UcbAgent
 import params
 
 
 def create_agents(model, agent_types):
     """Create agents given list of agent types."""
     for i in range(len(agent_types)):
-        if agent_types[i] == "greedy":
-            GreedyAgent.create_agents(model, n=1)
+        if agent_types[i] == "greedy_m":
+            GreedyMAgent.create_agents(model, n=1)
         elif agent_types[i] == "ucb":
             UcbAgent.create_agents(model, n=1)
-
+        elif agent_types[i] == "greedy_p":
+            GreedyPAgent.create_agents(model, n=1)
+        elif agent_types[i] == "greedy_o":
+            GreedyOAgent.create_agents(model, n=1)
 
 class TwoStageSupplyChainModel(Model):
-    def __init__(self, agent_types=("greedy", "greedy")):
+    def __init__(self, agent_types=("greedy_p", "greedy_m","greedy_o")):
         super().__init__()
 
         # Simulation & learning
@@ -25,10 +28,11 @@ class TwoStageSupplyChainModel(Model):
 
         # Initialize agents
         create_agents(self, agent_types)
-        
+
         self.rewards = {a: 0.0 for a in self.agents}
 
         # Inventory positions
+        # I1: Operation Inventory, I2: Marketing Inventory
         self.I1 = self.I2 = 0
         self.B1 = self.B2 = 0
         self.U1_prev = self.U2_prev = 0
@@ -81,7 +85,7 @@ class TwoStageSupplyChainModel(Model):
         U2 = O2
 
         # (5) demand
-        D = params.sample_demand(self.rng)
+        D = params.sample_demand(self.rng,p=10)
         sales = min(I1, B1 + D)
         I1 -= sales
         B1 = B1 + D - sales
@@ -103,9 +107,16 @@ class TwoStageSupplyChainModel(Model):
     def step(self):
 
         # (1) Agents choose base stock levels
-        self.agents.shuffle_do("select_action")
-        s1 = int(self.agents[0].action)
-        s2 = int(self.agents[1].action)
+        #self.agents.shuffle_do("select_action")
+        self.agents[0].select_action()
+        sigma_principal= self.agents[0].action[0]
+        beta_principal= self.agents[0].action[1]
+        self.agents[1].select_action()
+        self.agents[2].select_action()
+        # Get selected actions from agents
+        #1 marketing ,2 operations
+        s1,p = int(self.agents[1].action[0]),int(self.agents[1].action[1])
+        s2,x = int(self.agents[2].action[0]),int(self.agents[2].action[1])
 
         # (2) Market dynamics
         r1, r2 = self.env_step(s1, s2)
