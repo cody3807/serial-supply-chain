@@ -129,7 +129,7 @@ class TwoStageSupplyChainModel(Model):
         U2 = O2
 
         # (5) demand
-        D = params.sample_demand(self.rng,p=10)
+        D = params.sample_demand(self.rng,self.p_price)
         sales = min(I1, B1 + D)
         I1 -= sales
         B1 = B1 + D - sales
