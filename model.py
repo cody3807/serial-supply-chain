@@ -135,8 +135,10 @@ class TwoStageSupplyChainModel(Model):
         B1 = B1 + D - sales
 
         # (6) costs & rewards
-        H1 = (params.H1 + params.H2) * I1 + params.ALPHA * params.P_BO * B1 + self.sigma_principal*O1 - self.p_price * sales
-        H2 = params.H2 * (I2 + U1) + (1.0 - params.ALPHA) * params.P_BO * B1+params.P_BO *B2 - self.beta_principal*O1 + params.k*(self.x_operations)**2
+        #Marketing cost
+        H1 = (params.H1 + params.H2) * I1 + params.ALPHA * params.P_BO * B1 + self.sigma_principal*U1 - self.p_price * sales
+        #Operations cost
+        H2 = params.H2 * (I2 + U1) + (1.0 - params.ALPHA) * params.P_BO * B1+params.P_BO *B2 - self.beta_principal*U1 + params.k*(U2)**2
         total_cost = float(H1 + H2)
 
         # Commit
@@ -174,13 +176,12 @@ class TwoStageSupplyChainModel(Model):
         # Get selected actions from agents
         #1 marketing ,2 operations
         s1, p = int(self.agents[1].action[0]), int(self.agents[1].action[1])
-        s2, x = int(self.agents[2].action[0]), int(self.agents[2].action[1])
+        s2 = int(self.agents[2].action)
         
         # Store decision variables for reporting
         self.s1_marketing = s1
         self.p_price = p
         self.s2_operations = s2
-        self.x_operations = x
 
         # (2) Market dynamics
         principal_reward, r1, r2 = self.env_step(s1, s2)

@@ -5,6 +5,20 @@ and estimates the corresponding long-run average total cost via Monte Carlo.
 """
 
 import numpy as np
+#m params import sample_demand
+a=120
+b=1.5
+
+std_dev = 10
+#std_dev = 10
+def sample_demand(rng,p):
+ 
+    """One draw of consumer demand D_t ~ Poisson(LAM)"""
+    # Demand is depending on the price and follows a normal distribution
+    
+    mean = a - b * p
+    #return int(rng.gauss(mean, std_dev))
+    return int(rng.normal(mean, std_dev,1))
 
 
 def _env_step_once(
@@ -35,7 +49,7 @@ def _env_step_once(
     U2 = O2
 
     # (5) demand at retailer
-    D = int(rng.poisson(lam))
+    D = sample_demand(rng,p=lam)
     sales = min(I1, B1 + D)
     I1 -= sales
     B1 = B1 + D - sales
