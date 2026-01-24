@@ -1,213 +1,306 @@
+"""
+Two-Stage Serial Supply Chain Model with Split-Principal Architecture.
+
+This model implements a MARL simulation where decentralized agents attempt
+to converge to the centralized system optimum through learning.
+
+Agent execution order (strict causal sequence):
+1. Principals Update: Beta and Sigma set transfer prices
+2. Marketing Decision: Observe I1, select (p, s1), place order y
+3. Operations Decision: Observe order y, select (s2, x), produce
+4. Physical Flow: Production → Shipping → Inventory updates
+5. Market Realization: Demand → Sales → Backorders
+6. Reward & Learning: Calculate rewards, update policies
+"""
+
 import numpy as np
 from mesa import Model
 from mesa.datacollection import DataCollector
 
-from agents import GreedyAgent, GreedyMAgent, GreedyOAgent, GreedyPAgent, UcbAgent
+from agents import (
+    PrincipalBetaAgent, PrincipalSigmaAgent,
+    MarketingAgent, OperationsAgent,
+    GreedyPAgent, GreedyMAgent, GreedyOAgent
+)
 import params
 
 
 def create_agents(model, agent_types):
-    """Create agents given list of agent types."""
-    for i in range(len(agent_types)):
-        if agent_types[i] == "greedy_m":
-            GreedyMAgent.create_agents(model, n=1)
-        elif agent_types[i] == "ucb":
-            UcbAgent.create_agents(model, n=1)
-        elif agent_types[i] == "greedy_p":
+    """Create agents based on specified types."""
+    for agent_type in agent_types:
+        if agent_type == "greedy_beta":
+            PrincipalBetaAgent.create_agents(model, n=1)
+        elif agent_type == "greedy_sigma":
+            PrincipalSigmaAgent.create_agents(model, n=1)
+        elif agent_type == "greedy_m":
+            MarketingAgent.create_agents(model, n=1)
+        elif agent_type == "greedy_o":
+            OperationsAgent.create_agents(model, n=1)
+        # Legacy types
+        elif agent_type == "greedy_p":
             GreedyPAgent.create_agents(model, n=1)
-        elif agent_types[i] == "greedy_o":
-            GreedyOAgent.create_agents(model, n=1)
+
 
 class TwoStageSupplyChainModel(Model):
-    def __init__(self, agent_types=("greedy_p", "greedy_m","greedy_o")):
+    """
+    Two-Stage Serial Supply Chain with Split-Principal Architecture.
+    
+    Agents:
+    - Principal Beta: Controls buy price (β) for operations
+    - Principal Sigma: Controls sell price (σ) for marketing  
+    - Marketing: Retailer managing inventory I1, sets price p and base-stock s1
+    - Operations: Supplier managing inventory I2, sets base-stock s2 and production x
+    """
+    
+    def __init__(self, agent_types=("greedy_beta", "greedy_sigma", "greedy_m", "greedy_o")):
         super().__init__()
-
-        # Simulation & learning
+        
+        # Simulation control
         self.rng = np.random.default_rng(params.SEED)
         self.t = 0
-
+        
         # Initialize agents
         create_agents(self, agent_types)
-
         self.rewards = {a: 0.0 for a in self.agents}
-
-        # Inventory positions
-        # I1: Operation Inventory, I2: Marketing Inventory
-        self.I1 = self.I2 = 0
-        self.B1 = self.B2 = 0
-        self.U1_prev = self.U2_prev = 0
-
-        # Reporters
-        self.last_total_cost = 0.0
-        self.joint_reg_opt = 0.0
-        self.joint_reg_opt_cum = 0.0
         
-        # Decision variables
-        self.sigma_principal = 0
-        self.beta_principal = 0
-        self.s1_marketing = 0
-        self.p_price = 0
-        self.s2_operations = 0
-        self.x_operations = 0
+        # Inventory state
+        self.I1 = 0  # Marketing (retailer) inventory
+        self.I2 = 0  # Operations (supplier) inventory
         
-        # State variables for reporting
+        # Decision variables (for reporting)
+        self.beta = 0.0   # Buy price from Principal Beta
+        self.sigma = 0.0  # Sell price from Principal Sigma
+        self.p = 0        # Market price from Marketing
+        self.s1 = 0       # Base-stock level for Marketing
+        self.s2 = 0       # Base-stock level for Operations
+        self.x = 0        # Production quantity
+        self.y = 0        # Order quantity
+        
+        # State variables (for reporting)
         self.demand = 0
         self.sales = 0
+        self.backorders = 0
         self.shipment = 0
-        self.order_1 = 0
-        self.order_2 = 0
-        self.inventory_position_1 = 0
-        self.inventory_position_2 = 0
-        self.cost_H1 = 0.0
-        self.cost_H2 = 0.0
+        
+        # Cost components
+        self.cost_marketing = 0.0
+        self.cost_operations = 0.0
+        self.total_cost = 0.0
+        
+        # Rewards
+        self.reward_beta = 0.0
+        self.reward_sigma = 0.0
         self.reward_marketing = 0.0
         self.reward_operations = 0.0
-
-        # Initialize DataCollector
+        
+        # Benchmark comparison
+        self.regret_vs_optimal = 0.0
+        self.regret_cumulative = 0.0
+        
+        # Data collection
         self.datacollector = DataCollector(
             model_reporters={
-                "Total Cost": "last_total_cost",
-                "Joint Regret Opt": "joint_reg_opt",
-                "Cumulative Regret Opt": "joint_reg_opt_cum",
-                "Sigma (Principal)": "sigma_principal",
-                "Beta (Principal)": "beta_principal",
-                "S1 (Marketing)": "s1_marketing",
-                "Price": "p_price",
-                "S2 (Operations)": "s2_operations",
-                "X (Operations)": "x_operations",
-                "I1 (Marketing Inventory)": "I1",
-                "I2 (Operations Inventory)": "I2",
-                "B1 (Marketing Backorder)": "B1",
-                "B2 (Operations Backorder)": "B2",
-                "U1 (Units in Transit to Marketing)": "U1_prev",
-                "U2 (Units in Transit to Operations)": "U2_prev",
-                "IP1 (Marketing Inventory Position)": "inventory_position_1",
-                "IP2 (Operations Inventory Position)": "inventory_position_2",
+                "Step": lambda m: m.t,
+                "Beta": "beta",
+                "Sigma": "sigma",
+                "Price": "p",
+                "S1 (Marketing)": "s1",
+                "S2 (Operations)": "s2",
+                "X (Production)": "x",
+                "Y (Order)": "y",
+                "I1 (Marketing Inv)": "I1",
+                "I2 (Operations Inv)": "I2",
                 "Demand": "demand",
                 "Sales": "sales",
+                "Backorders": "backorders",
                 "Shipment": "shipment",
-                "O1 (Marketing Order)": "order_1",
-                "O2 (Operations Order)": "order_2",
-                "H1 (Marketing Cost)": "cost_H1",
-                "H2 (Operations Cost)": "cost_H2",
-                "R1 (Marketing Reward)": "reward_marketing",
-                "R2 (Operations Reward)": "reward_operations",
+                "R_Beta": "reward_beta",
+                "R_Sigma": "reward_sigma",
+                "R_Marketing": "reward_marketing",
+                "R_Operations": "reward_operations",
+                "Total Cost": "total_cost",
+                "Regret vs Optimal": "regret_vs_optimal",
+                "Cumulative Regret": "regret_cumulative",
             },
             agent_reporters={
-                "Base Stock Level": "action",
+                "Agent Name": lambda a: getattr(a, 'name', a.__class__.__name__),
+                "Action": "action",
                 "Reward": "reward",
                 "Cumulative Reward": "reward_cum",
             },
         )
-
-    # Inventory transitions
-    def env_step(self, s1_loc, s2_loc):
-        """
-        Simulates one period of the 2-stage serial supply chain env given chosen base stock policies.
-        Returns negative inventory costs as feedback signal for each agent.
-        """
-        I1, I2, B1, B2 = self.I1, self.I2, self.B1, self.B2
-        U1_prev, U2_prev = self.U1_prev, self.U2_prev
-
-        # (1) arrivals
-        I1 += U1_prev
-        I2 += U2_prev
-
-        # (2) local IP
-        IP1 = I1 - B1
-        IP2 = I2 - B2
-
-        # (3) order-up-to
-        O1 = max(0, s1_loc - IP1)
-        O2 = max(0, s2_loc - IP2)
-
-        # (4) releases
-        ship = min(I2, B2 + O1)
-        I2 -= ship
-        B2 = B2 + O1 - ship
-        U1 = ship
-        U2 = O2
-
-        # (5) demand
-        D = params.sample_demand(self.rng,p=10)
-        sales = min(I1, B1 + D)
-        I1 -= sales
-        B1 = B1 + D - sales
-
-        # (6) costs & rewards
-        H1 = (params.H1 + params.H2) * I1 + params.ALPHA * params.P_BO * B1 + self.sigma_principal*O1 - self.p_price * sales
-        H2 = params.H2 * (I2 + U1) + (1.0 - params.ALPHA) * params.P_BO * B1+params.P_BO *B2 - self.beta_principal*O1 + params.k*(self.x_operations)**2
-        total_cost = float(H1 + H2)
-
-        # Commit
-        self.I1, self.I2 = I1, I2
-        self.B1, self.B2 = B1, B2
-        self.U1_prev, self.U2_prev = U1, U2
-        self.last_total_cost = total_cost
-        
-        # Store state variables for reporting
-        self.inventory_position_1 = IP1
-        self.inventory_position_2 = IP2
-        self.order_1 = O1
-        self.order_2 = O2
-        self.shipment = ship
-        self.demand = D
-        self.sales = sales
-        self.cost_H1 = float(H1)
-        self.cost_H2 = float(H2)
-        self.reward_marketing = -float(H1)
-        self.reward_operations = -float(H2)
-        self.reward_principle = -float(H1 + H2)
-
-        return -float(H1 + H2), -float(H1), -float(H2)
-
-    # Simulate one round
+    
     def step(self):
-
-        # (1) Agents choose base stock levels
-        #self.agents.shuffle_do("select_action")
-        self.agents[0].select_action()
-        self.sigma_principal = self.agents[0].action[0]
-        self.beta_principal = self.agents[0].action[1]
-        self.agents[1].select_action()
-        self.agents[2].select_action()
-        # Get selected actions from agents
-        #1 marketing ,2 operations
-        s1, p = int(self.agents[1].action[0]), int(self.agents[1].action[1])
-        s2, x = int(self.agents[2].action[0]), int(self.agents[2].action[1])
+        """
+        Execute one simulation step with strict causal ordering.
+        """
+        # Get agents by type
+        principal_beta = None
+        principal_sigma = None
+        marketing = None
+        operations = None
         
-        # Store decision variables for reporting
-        self.s1_marketing = s1
-        self.p_price = p
-        self.s2_operations = s2
-        self.x_operations = x
-
-        # (2) Market dynamics
-        principal_reward, r1, r2 = self.env_step(s1, s2)
-
-        # (3) Agents receive reward signals
-        self.rewards[self.agents[0]] = principal_reward
-        self.agents[0].reward = principal_reward
-        self.rewards[self.agents[1]] = r1
-        self.agents[1].reward = r1
-        self.rewards[self.agents[2]] = r2
-        self.agents[2].reward = r2
-        self.principal_reward = principal_reward
-        self.reward_marketing = r1
-        self.reward_operations = r2
-
-        # (4) Learning
+        for agent in self.agents:
+            if isinstance(agent, PrincipalBetaAgent):
+                principal_beta = agent
+            elif isinstance(agent, PrincipalSigmaAgent):
+                principal_sigma = agent
+            elif isinstance(agent, (MarketingAgent, GreedyMAgent)):
+                marketing = agent
+            elif isinstance(agent, (OperationsAgent, GreedyOAgent)):
+                operations = agent
+        
+        # ============================================
+        # 1. PRINCIPALS UPDATE (set transfer prices)
+        # ============================================
+        if principal_beta:
+            principal_beta.select_action()
+            self.beta = principal_beta.get_beta()
+        
+        if principal_sigma:
+            principal_sigma.select_action()
+            self.sigma = principal_sigma.get_sigma()
+        
+        # ============================================
+        # 2. MARKETING DECISION
+        # ============================================
+        if marketing:
+            marketing.select_action()
+            self.p = marketing.p
+            self.s1 = marketing.s1
+            self.y = marketing.compute_order(self.I1)  # y = max(0, s1 - I1)
+        
+        # ============================================
+        # 3. OPERATIONS DECISION
+        # ============================================
+        if operations:
+            operations.select_action()
+            self.s2 = operations.s2
+            self.x = operations.compute_production(self.I2)  # x = max(0, s2 - I2)
+        # ============================================
+        # 4. PHYSICAL FLOW (Production & Shipping)
+        # ============================================
+        # 
+        # x is already computed from base-stock: x = max(0, s2 - I2)
+        # Now apply profitability constraint from transfer price β
+        #
+        
+        # Production gating: Only produce if profitable
+        # Marginal cost = d(k*x²)/dx = 2*k*x
+        # Profitable if: β >= 2*k*x → x <= β/(2*k)
+        if params.k > 0:
+            max_profitable_x = int(self.beta / (2 * params.k))
+            self.x = min(self.x, max_profitable_x)
+        
+        # Production: I2 increases by x
+        self.I2 += self.x
+        
+        # Shipment gating: Marketing only orders if market price covers transfer cost
+        # Profitable if: p >= σ
+        if self.p >= self.sigma:
+            self.shipment = min(self.y, self.I2)
+        else:
+            # Not profitable to order - shipment blocked
+            self.shipment = 0
+            self.y = 0  # Reflect that no order was placed
+        
+        self.I2 -= self.shipment
+        self.I1 += self.shipment
+        
+        # ============================================
+        # 5. MARKET REALIZATION
+        # ============================================
+        # Generate demand based on price
+        self.demand = params.sample_demand(self.rng, self.p)
+        
+        # Sales = min(D, I1)
+        self.sales = min(self.demand, self.I1)
+        
+        # Backorders = D - Sales (lost sales)
+        self.backorders = self.demand - self.sales
+        
+        # Update inventory
+        self.I1 -= self.sales
+        
+        # ============================================
+        # 6. REWARD CALCULATION (Echelon Holding Costs per Cachon & Zipkin 1999)
+        # ============================================
+        # Marketing: (h1-h2)×I1 - incremental cost only
+        self.reward_marketing = MarketingAgent.compute_reward(
+            p=self.p,
+            sales=self.sales,
+            sigma=self.sigma,
+            shipment=self.shipment,  # Pay for goods RECEIVED, not ordered
+            h1=params.H1,
+            h2=params.H2,
+            I1=self.I1,  # Echelon: (h1-h2)×I1
+            alpha=params.ALPHA,
+            pi=params.P_BO,
+            backorders=self.backorders
+        )
+        
+        # Operations: h2×(I1+I2) - echelon inventory = all downstream
+        self.reward_operations = OperationsAgent.compute_reward(
+            beta=self.beta,
+            x=self.x,
+            k=params.k,
+            h2=params.H2,
+            I1=self.I1,  # Echelon: h2×(I1+I2)
+            I2=self.I2,
+            alpha=params.ALPHA,
+            pi=params.P_BO,
+            backorders=self.backorders
+        )
+        
+        # Principal rewards: system profit (negative total cost)
+        # Total cost = all costs - revenue
+        revenue = self.p * self.sales
+        production_cost = params.k * (self.x ** 2)
+        holding_costs = params.H1 * self.I1 + params.H2 * self.I2
+        backorder_cost = params.P_BO * self.backorders
+        
+        self.total_cost = production_cost + holding_costs + backorder_cost - revenue
+        system_profit = -self.total_cost
+        
+        self.reward_beta = system_profit
+        self.reward_sigma = system_profit
+        
+        # ============================================
+        # 7. LEARNING UPDATE
+        # ============================================
+        # Assign rewards to agents
+        if principal_beta:
+            self.rewards[principal_beta] = self.reward_beta
+            principal_beta.reward = self.reward_beta
+            principal_beta.reward_cum += self.reward_beta
+        
+        if principal_sigma:
+            self.rewards[principal_sigma] = self.reward_sigma
+            principal_sigma.reward = self.reward_sigma
+            principal_sigma.reward_cum += self.reward_sigma
+        
+        if marketing:
+            self.rewards[marketing] = self.reward_marketing
+            marketing.reward = self.reward_marketing
+            marketing.reward_cum += self.reward_marketing
+        
+        if operations:
+            self.rewards[operations] = self.reward_operations
+            operations.reward = self.reward_operations
+            operations.reward_cum += self.reward_operations
+        
+        # Update beliefs (learning)
         self.agents.shuffle_do("update_belief")
+        
+        # ============================================
+        # 8. METRICS & DATA COLLECTION
+        # ============================================
+        # Regret vs optimal (will be meaningful after benchmark is computed)
+        self.regret_vs_optimal = self.total_cost - params.CTOT_OPT
+        self.regret_cumulative += self.regret_vs_optimal
+        
+        # Advance time
         self.t += 1
-
-        # Agent reporters
-        self.agents[0].reward_cum = self.agents[0].reward_cum + principal_reward
-        self.agents[1].reward_cum = self.agents[1].reward_cum + r1
-        self.agents[2].reward_cum = self.agents[2].reward_cum + r2
-
-        # Model reporters
-        self.joint_reg_opt = self.last_total_cost - params.CTOT_OPT
-        self.joint_reg_opt_cum += self.joint_reg_opt
-
+        
         # Collect data
         self.datacollector.collect(self)
