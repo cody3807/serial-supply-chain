@@ -208,7 +208,7 @@ class OperationsAgent(BaseGreedyAgent):
         return self.x
     
     @staticmethod
-    def compute_reward(beta, x, k, h2, I1, I2, alpha, pi, backorders):
+    def compute_reward(beta, shipment, x, k, h2, I1, I2, alpha, pi, backorders):
         """
         Compute Operations agent reward using ECHELON holding costs.
         
@@ -216,9 +216,10 @@ class OperationsAgent(BaseGreedyAgent):
         - Echelon inventory at supplier = I1 + I2 (all inventory downstream)
         - Echelon holding cost = h2 × (I1 + I2)
         
-        R_O = (β × x) - (k × x²) - (h2 × (I1+I2)) - ((1-α) × π × Backorders)
+        Revenue is based on TRANSFER amount (shipment), not production.
+        R_O = (β × shipment) - (k × x²) - (h2 × (I1+I2)) - ((1-α) × π × Backorders)
         """
-        transfer_revenue = beta * x
+        transfer_revenue = beta * shipment
         production_cost = k * (x ** 2)  # Convex cost
         holding_cost = h2 * (I1 + I2)  # Echelon: all downstream inventory
         backorder_cost = (1 - alpha) * pi * backorders

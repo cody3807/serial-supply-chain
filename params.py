@@ -39,7 +39,7 @@ def sample_demand(rng, price):
 
 # Base-stock levels (for Marketing s1 and Operations s2)
 S_LOWER = 0
-S_UPPER = 60
+S_UPPER = 80
 s_range = np.arange(S_LOWER, S_UPPER + 1, 5, dtype=int)  # Discretized for tractability
 
 # Price range for Marketing (explicit set)
@@ -47,7 +47,7 @@ p_range = np.array([30, 35, 40, 45, 50, 55, 60], dtype=int)
 
 # Production range for Operations
 X_MIN = 0
-X_MAX = 60
+X_MAX = 80
 x_range = np.arange(X_MIN, X_MAX + 1, 5, dtype=int)
 
 # Transfer price ranges for Principals

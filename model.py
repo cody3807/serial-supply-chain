@@ -242,6 +242,7 @@ class TwoStageSupplyChainModel(Model):
         # Operations: h2×(I1+I2) - echelon inventory = all downstream
         self.reward_operations = OperationsAgent.compute_reward(
             beta=self.beta,
+            shipment=self.shipment,  # Revenue based on shipment
             x=self.x,
             k=params.k,
             h2=params.H2,
