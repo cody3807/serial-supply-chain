@@ -179,16 +179,18 @@ def compute_centralized_optimum(
 def compute_quick_optimum(verbose=True):
     """
     Compute optimum with reduced search space for faster execution.
-    Uses coarser grid search. x is derived from s2.
+    Uses the SAME ranges as MARL simulation for fair comparison.
+    x is derived from s2.
     """
-    # Reduced ranges for quick computation
-    p_range = np.array([30, 35, 40, 45, 50, 55, 60], dtype=int)
-    s_range = np.arange(0, 80, 5, dtype=int)  # Base-stock: 0, 5, 10... to 75
+    # Use same ranges as MARL simulation from params
+    p_range = params.p_range  # Same price range as Marketing
+    s1_range = params.s1_range  # Same s1 range as Marketing
+    s2_range = params.s2_range  # Same s2 range as Operations
     
     return compute_centralized_optimum(
         p_range=p_range,
-        s1_range=s_range,
-        s2_range=s_range,
+        s1_range=s1_range,
+        s2_range=s2_range,
         rounds=1000,  # Faster
         warmup=200,
         verbose=verbose
@@ -297,7 +299,7 @@ if __name__ == "__main__":
     print()
     
     # Run quick optimization (coarse grid)
-    p_opt, s1_opt, s2_opt, x_opt, profit_opt, cost_opt = compute_quick_optimum()
+    p_opt, s1_opt, s2_opt, profit_opt, cost_opt = compute_quick_optimum()
     
     print(f"\nTo use this benchmark, set in params.py:")
     print(f"  CTOT_OPT = {cost_opt:.2f}")

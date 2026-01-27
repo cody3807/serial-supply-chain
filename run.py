@@ -47,14 +47,14 @@ def run_simulation(rounds=None, verbose=True):
     # ============================================
     print("STEP 2: Running Decentralized MARL Simulation")
     print("-" * 40)
-    print(f"Agents: PrincipalBeta, PrincipalSigma, Marketing, Operations")
+    print(f"Agents: Principal (unified), Marketing, Operations")
     print(f"Rounds: {rounds}")
     print(f"Learning: ε-greedy with decay ({params.EPS_START} → {params.EPS_END})")
     print()
     
-    # Create and run model
+    # Create and run model with unified Principal
     model = TwoStageSupplyChainModel(
-        agent_types=("greedy_beta", "greedy_sigma", "greedy_m", "greedy_o")
+        agent_types=("principal", "greedy_m", "greedy_o")
     )
     
     # Progress reporting
@@ -87,6 +87,8 @@ def run_simulation(rounds=None, verbose=True):
     avg_profit = -avg_cost
     avg_backorders = df_stable["Backorders"].mean()
     avg_sales = df_stable["Sales"].mean()
+    avg_I1 = df_stable["I1 (Marketing Inv)"].mean()
+    avg_I2 = df_stable["I2 (Operations Inv)"].mean()
     final_cumulative_regret = df_model["Cumulative Regret"].iloc[-1]
     
     # Most common actions in stable period
@@ -107,6 +109,8 @@ def run_simulation(rounds=None, verbose=True):
     print(f"  β = {mode_beta}, σ = {mode_sigma}")
     print(f"  p = {mode_price}, s1 = {mode_s1}, s2 = {mode_s2}, x = {mode_x}")
     print(f"  Avg Profit/period: {avg_profit:.2f}")
+    print(f"  Avg I1 (Marketing): {avg_I1:.2f}")
+    print(f"  Avg I2 (Operations): {avg_I2:.2f}")
     print(f"  Avg Backorders: {avg_backorders:.2f}")
     print(f"  Avg Sales: {avg_sales:.2f}")
     print()
@@ -118,60 +122,6 @@ def run_simulation(rounds=None, verbose=True):
     print(f"  Cumulative Regret: {final_cumulative_regret:.2f}")
     print()
     
-    # ============================================
-    # 4. EXPORT RESULTS
-    # ============================================
-    print("STEP 4: Exporting Results")
-    print("-" * 40)
-    
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"simulation_results_{timestamp}.xlsx"
-    
-    # Summary dataframe
-    summary_data = {
-        "Metric": [
-            "Optimal Price (p*)",
-            "Optimal s1*",
-            "Optimal s2*",
-            "(x derived from s2)",
-            "Optimal Profit/period",
-            "Optimal Cost/period",
-            "",
-            "Learned Beta (mode)",
-            "Learned Sigma (mode)",
-            "Learned Price (mode)",
-            "Learned s1 (mode)",
-            "Learned s2 (mode)",
-            "Learned x (mode)",
-            "Avg Profit/period",
-            "Avg Cost/period",
-            "",
-            "Efficiency vs Optimal (%)",
-            "Cumulative Regret",
-            "Simulation Rounds",
-        ],
-        "Value": [
-            p_opt, s1_opt, s2_opt, "-",
-            f"{profit_opt:.2f}", f"{cost_opt:.2f}",
-            "",
-            mode_beta, mode_sigma, mode_price,
-            mode_s1, mode_s2, mode_x,
-            f"{avg_profit:.2f}", f"{avg_cost:.2f}",
-            "",
-            f"{efficiency:.1f}%",
-            f"{final_cumulative_regret:.2f}",
-            rounds,
-        ]
-    }
-    df_summary = pd.DataFrame(summary_data)
-    
-    with pd.ExcelWriter(filename, engine='openpyxl') as writer:
-        df_summary.to_excel(writer, sheet_name='Summary', index=False)
-        df_model.to_excel(writer, sheet_name='Model Data')
-        df_agents.to_excel(writer, sheet_name='Agent Data')
-    
-    print(f"Results exported to: {filename}")
-    print()
     print("=" * 60)
     print("SIMULATION COMPLETE")
     print("=" * 60)
@@ -184,5 +134,5 @@ def run_simulation(rounds=None, verbose=True):
 
 
 if __name__ == "__main__":
-    # Run with default parameters
-    model, df_model, df_agents, results = run_simulation(rounds=10000)
+    # Run with parameters from params.py
+    model, df_model, df_agents, results = run_simulation(rounds=params.ROUNDS)

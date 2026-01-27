@@ -68,6 +68,45 @@ class BaseGreedyAgent(Agent):
 # Principal Agents (Split Architecture)
 # ============================================
 
+class PrincipalAgent(BaseGreedyAgent):
+    """
+    Unified Principal Agent - Controls both β and σ.
+    
+    Goal: Minimize total system cost by setting transfer prices that
+    incentivize Marketing and Operations to behave optimally.
+    
+    Decisions:
+    - Beta (β): Buy price paid to Operations for each unit produced
+    - Sigma (σ): Sell price charged to Marketing for each unit ordered
+    
+    Reward: System profit = Revenue - Total Costs
+    """
+    
+    def __init__(self, model):
+        action_space = params.action_space_principal()
+        super().__init__(model, action_space)
+        self.name = "Principal"
+        
+        # Current decisions
+        self.beta = 0.0
+        self.sigma = 0.0
+    
+    def select_action(self):
+        """Select (beta, sigma) action."""
+        super().select_action()
+        if self.action is not None:
+            self.beta = float(self.action[0])
+            self.sigma = float(self.action[1])
+    
+    def get_beta(self):
+        """Return the selected beta value."""
+        return self.beta
+    
+    def get_sigma(self):
+        """Return the selected sigma value."""
+        return self.sigma
+
+
 class PrincipalBetaAgent(BaseGreedyAgent):
     """
     Principal Beta Agent - Supply Coordinator.
@@ -179,13 +218,16 @@ class OperationsAgent(BaseGreedyAgent):
     Production is DERIVED from base-stock policy:
     - x = max(0, s2 - I2) — produce up to target level
     
-    Reward Function:
-    R_O = (β × x) - (k × x²) - h2×(I1+I2) - ((1-α) × π × Backorders)
+    Reward Function (demand-driven):
+    R_O = (β × shipped) - (k × x²) - h2×(I1+I2) - ((1-α) × π × Backorders)
+    
+    NOTE: Gets paid only for shipped units, not produced!
+    This incentivizes matching production to actual demand.
     """
     
     def __init__(self, model):
         # Only s2 in action space now (not s2, x)
-        action_space = params.s_range  # Just base-stock levels
+        action_space = params.s2_range  # Just base-stock levels for Operations
         super().__init__(model, action_space)
         self.name = "Operations"
         
@@ -208,7 +250,7 @@ class OperationsAgent(BaseGreedyAgent):
         return self.x
     
     @staticmethod
-    def compute_reward(beta, x, k, h2, I1, I2, alpha, pi, backorders):
+    def compute_reward(beta, x, shipped, k, h2, I1, I2, alpha, pi, backorders):
         """
         Compute Operations agent reward using ECHELON holding costs.
         
@@ -216,10 +258,13 @@ class OperationsAgent(BaseGreedyAgent):
         - Echelon inventory at supplier = I1 + I2 (all inventory downstream)
         - Echelon holding cost = h2 × (I1 + I2)
         
-        R_O = (β × x) - (k × x²) - (h2 × (I1+I2)) - ((1-α) × π × Backorders)
+        IMPORTANT: Transfer revenue is based on SHIPPED units, not produced!
+        This incentivizes Operations to produce only what Marketing needs.
+        
+        R_O = (β × shipped) - (k × x²) - (h2 × (I1+I2)) - ((1-α) × π × Backorders)
         """
-        transfer_revenue = beta * x
-        production_cost = k * (x ** 2)  # Convex cost
+        transfer_revenue = beta * shipped  # Only get paid for what's shipped!
+        production_cost = k * (x ** 2)  # Convex cost for ALL production
         holding_cost = h2 * (I1 + I2)  # Echelon: all downstream inventory
         backorder_cost = (1 - alpha) * pi * backorders
         return transfer_revenue - production_cost - holding_cost - backorder_cost

@@ -18,7 +18,7 @@ from mesa import Model
 from mesa.datacollection import DataCollector
 
 from agents import (
-    PrincipalBetaAgent, PrincipalSigmaAgent,
+    PrincipalAgent, PrincipalBetaAgent, PrincipalSigmaAgent,
     MarketingAgent, OperationsAgent,
     GreedyPAgent, GreedyMAgent, GreedyOAgent
 )
@@ -27,20 +27,29 @@ import params
 
 def create_agents(model, agent_types):
     """Create agents based on specified types."""
+    # Ajanları doğrudan oluşturuyoruz (create_agents metodu yerine)
+    
     for agent_type in agent_types:
-        if agent_type == "greedy_beta":
-            PrincipalBetaAgent.create_agents(model, n=1)
+        if agent_type == "principal":
+            # Unified Principal agent
+            PrincipalAgent(model)
+            
+        elif agent_type == "greedy_beta":
+            # Doğrudan sınıfı çağırarak örnek (instance) oluşturuyoruz
+            PrincipalBetaAgent(model) 
+            
         elif agent_type == "greedy_sigma":
-            PrincipalSigmaAgent.create_agents(model, n=1)
+            PrincipalSigmaAgent(model)
+            
         elif agent_type == "greedy_m":
-            MarketingAgent.create_agents(model, n=1)
+            MarketingAgent(model)
+            
         elif agent_type == "greedy_o":
-            OperationsAgent.create_agents(model, n=1)
+            OperationsAgent(model)
+            
         # Legacy types
         elif agent_type == "greedy_p":
-            GreedyPAgent.create_agents(model, n=1)
-
-
+            GreedyPAgent(model)
 class TwoStageSupplyChainModel(Model):
     """
     Two-Stage Serial Supply Chain with Split-Principal Architecture.
@@ -88,6 +97,7 @@ class TwoStageSupplyChainModel(Model):
         self.total_cost = 0.0
         
         # Rewards
+        self.reward_principal = 0.0
         self.reward_beta = 0.0
         self.reward_sigma = 0.0
         self.reward_marketing = 0.0
@@ -135,13 +145,16 @@ class TwoStageSupplyChainModel(Model):
         Execute one simulation step with strict causal ordering.
         """
         # Get agents by type
+        principal = None  # Unified principal
         principal_beta = None
         principal_sigma = None
         marketing = None
         operations = None
         
         for agent in self.agents:
-            if isinstance(agent, PrincipalBetaAgent):
+            if isinstance(agent, PrincipalAgent):
+                principal = agent
+            elif isinstance(agent, PrincipalBetaAgent):
                 principal_beta = agent
             elif isinstance(agent, PrincipalSigmaAgent):
                 principal_sigma = agent
@@ -151,14 +164,21 @@ class TwoStageSupplyChainModel(Model):
                 operations = agent
         
         # ============================================
-        # 1. PRINCIPALS UPDATE (set transfer prices)
+        # 1. PRINCIPAL UPDATE (set transfer prices)
         # ============================================
-        if principal_beta:
-            principal_beta.select_action()
-            self.beta = principal_beta.get_beta()
-        
-        if principal_sigma:
-            principal_sigma.select_action()
+        if principal:
+            # Unified principal sets both beta and sigma
+            principal.select_action()
+            self.beta = principal.get_beta()
+            self.sigma = principal.get_sigma()
+        else:
+            # Fallback to split principals
+            if principal_beta:
+                principal_beta.select_action()
+                self.beta = principal_beta.get_beta()
+            
+            if principal_sigma:
+                principal_sigma.select_action()
             self.sigma = principal_sigma.get_sigma()
         
         # ============================================
@@ -240,9 +260,11 @@ class TwoStageSupplyChainModel(Model):
         )
         
         # Operations: h2×(I1+I2) - echelon inventory = all downstream
+        # Gets paid only for shipped units, not all production!
         self.reward_operations = OperationsAgent.compute_reward(
             beta=self.beta,
             x=self.x,
+            shipped=self.shipment,  # Only get paid for what's shipped!
             k=params.k,
             h2=params.H2,
             I1=self.I1,  # Echelon: h2×(I1+I2)
@@ -252,7 +274,7 @@ class TwoStageSupplyChainModel(Model):
             backorders=self.backorders
         )
         
-        # Principal rewards: system profit (negative total cost)
+        # Principal reward: system profit (minimize total cost)
         # Total cost = all costs - revenue
         revenue = self.p * self.sales
         production_cost = params.k * (self.x ** 2)
@@ -262,13 +284,28 @@ class TwoStageSupplyChainModel(Model):
         self.total_cost = production_cost + holding_costs + backorder_cost - revenue
         system_profit = -self.total_cost
         
-        self.reward_beta = system_profit
+        # Principal reward: system profit + margin incentive
+        # (σ - β) × shipment = Principal's per-unit margin on transfers
+        # This incentivizes Principal to:
+        # - Increase σ (charge more to Marketing) → reduces Marketing over-ordering
+        # - Decrease β (pay less to Operations) → reduces Operations over-production
+        # But balanced by system profit which needs sales to happen
+        # Weight = 0.5 for balanced incentive
+        principal_margin = 0.5 * (self.sigma - self.beta) * self.shipment
+        
+        self.reward_principal = system_profit + principal_margin
+        self.reward_beta = system_profit  # For backwards compatibility
         self.reward_sigma = system_profit
         
         # ============================================
         # 7. LEARNING UPDATE
         # ============================================
         # Assign rewards to agents
+        if principal:
+            self.rewards[principal] = self.reward_principal
+            principal.reward = self.reward_principal
+            principal.reward_cum += self.reward_principal
+        
         if principal_beta:
             self.rewards[principal_beta] = self.reward_beta
             principal_beta.reward = self.reward_beta
