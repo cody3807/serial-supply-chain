@@ -2,7 +2,7 @@ import numpy as np
 from mesa import Model
 from mesa.datacollection import DataCollector
 
-from agents import GreedyAgent, GreedyMAgent, GreedyOAgent, GreedyPAgent, UcbAgent
+from agents import GreedyAgent, GreedyMAgent, GreedyOAgent, GreedyPAgent, UcbAgent, UcbMAgent, UcbOAgent, UcbPAgent
 import params
 
 
@@ -11,15 +11,19 @@ def create_agents(model, agent_types):
     for i in range(len(agent_types)):
         if agent_types[i] == "greedy_m":
             GreedyMAgent.create_agents(model, n=1)
-        elif agent_types[i] == "ucb":
-            UcbAgent.create_agents(model, n=1)
+        elif agent_types[i] == "ucb_p":
+            UcbPAgent.create_agents(model, n=1)
         elif agent_types[i] == "greedy_p":
             GreedyPAgent.create_agents(model, n=1)
         elif agent_types[i] == "greedy_o":
             GreedyOAgent.create_agents(model, n=1)
+        elif agent_types[i] == "ucb_m":
+            UcbMAgent.create_agents(model, n=1)
+        elif agent_types[i] == "ucb_o":
+            UcbOAgent.create_agents(model, n=1)
 
 class TwoStageSupplyChainModel(Model):
-    def __init__(self, agent_types=("greedy_p", "greedy_m","greedy_o")):
+    def __init__(self, agent_types=("ucb_p", "ucb_m","ucb_o")):
         super().__init__()
 
         # Simulation & learning
@@ -138,6 +142,7 @@ class TwoStageSupplyChainModel(Model):
         #Marketing cost
         H1 = (params.H1 + params.H2) * I1 + params.ALPHA * params.P_BO * B1 + self.sigma_principal*U1 - self.p_price * sales
         #Operations cost
+        #TODO check B2 back order cost
         H2 = params.H2 * (I2 + U1) + (1.0 - params.ALPHA) * params.P_BO * B1+params.P_BO *B2 - self.beta_principal*U1 + params.k*(U2)**2
         total_cost = float(H1 + H2)
 
@@ -159,7 +164,8 @@ class TwoStageSupplyChainModel(Model):
         self.cost_H2 = float(H2)
         self.reward_marketing = -float(H1)
         self.reward_operations = -float(H2)
-        self.reward_principle = -float(H1 + H2)
+        punishment = 0.5 * (self.sigma_principal - self.beta_principal) * U1
+        self.reward_principle = -float(H1 + H2) + punishment
 
         return -float(H1 + H2), -float(H1), -float(H2)
 

@@ -5,7 +5,7 @@ import pandas as pd
 from datetime import datetime
 
 # Example model 
-model = TwoStageSupplyChainModel(agent_types=("greedy_p","greedy_m","greedy_o"))
+model = TwoStageSupplyChainModel(agent_types=("ucb_p","ucb_m","ucb_o"))
 for _ in range(params.ROUNDS):
     model.step()
 
