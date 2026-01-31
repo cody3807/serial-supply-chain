@@ -213,7 +213,7 @@ class TwoStageSupplyChainModel(Model):
         self.agents[2].reward_cum = self.agents[2].reward_cum + r2
 
         # Model reporters
-        self.joint_reg_opt = self.last_total_cost - params.CTOT_OPT
+        #self.joint_reg_opt = self.last_total_cost - params.CTOT_OPT
         self.joint_reg_opt_cum += self.joint_reg_opt
 
         # Collect data

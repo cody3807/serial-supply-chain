@@ -337,7 +337,7 @@ class UcbPAgent(Agent):
         super().__init__(model)
 
         # Action space
-        self.action_space = params.action_space()
+        self.action_space = params.action_space_principal()
         self.n_actions = len(self.action_space)
 
         # Estimates
@@ -399,7 +399,7 @@ class UcbOAgent(Agent):
         super().__init__(model)
 
         # Action space
-        self.action_space = params.action_space()
+        self.action_space = params.action_space_operation()
         self.n_actions = len(self.action_space)
 
         # Estimates
@@ -462,7 +462,7 @@ class UcbMAgent(Agent):
         super().__init__(model)
 
         # Action space
-        self.action_space = params.action_space()
+        self.action_space = params.action_space_marketing()
         self.n_actions = len(self.action_space)
 
         # Estimates

@@ -81,13 +81,20 @@ def action_space_operation():
 WARMUP = 2000 # start to estimate here
 
 
-for i in p:
-    S1_OPT_LOC, S2_OPT_LOC, CTOT_OPT = compute_supply_optimum_local(
-        s_lower=S_LOWER, s_upper=S_UPPER, seed=SEED,
-        rounds=ROUNDS, warmup=WARMUP, lam=i,
-        h1=H1, h2=H2,p_bo=P_BO, alpha=ALPHA
-    )
+# for i in p:
+#     S1_OPT_LOC, S2_OPT_LOC, CTOT_OPT = compute_supply_optimum_local(
+#         s_lower=S_LOWER, s_upper=S_UPPER, seed=SEED,
+#         rounds=ROUNDS, warmup=WARMUP, lam=i,
+#         h1=H1, h2=H2,p_bo=P_BO, alpha=ALPHA
+#     )
 
-    print(i,S1_OPT_LOC, S2_OPT_LOC, CTOT_OPT)
+#     print(i,S1_OPT_LOC, S2_OPT_LOC, CTOT_OPT)
 
 
+# S1_OPT_LOC, S2_OPT_LOC, CTOT_OPT = compute_supply_optimum_local(
+#         s_lower=S_LOWER, s_upper=S_UPPER, seed=SEED,
+#         rounds=ROUNDS, warmup=WARMUP, lam=65,
+#         h1=H1, h2=H2,p_bo=P_BO, alpha=ALPHA
+#     )
+
+# print(65,S1_OPT_LOC, S2_OPT_LOC, CTOT_OPT)
