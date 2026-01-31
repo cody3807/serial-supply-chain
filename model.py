@@ -55,13 +55,12 @@ class TwoStageSupplyChainModel(Model):
     Two-Stage Serial Supply Chain with Split-Principal Architecture.
     
     Agents:
-    - Principal Beta: Controls buy price (β) for operations
-    - Principal Sigma: Controls sell price (σ) for marketing  
+    - Principal: Unified agent controlling both β and σ (buy and sell transfer prices)
     - Marketing: Retailer managing inventory I1, sets price p and base-stock s1
     - Operations: Supplier managing inventory I2, sets base-stock s2 and production x
     """
     
-    def __init__(self, agent_types=("greedy_beta", "greedy_sigma", "greedy_m", "greedy_o")):
+    def __init__(self, agent_types=("principal", "greedy_m", "greedy_o")):
         super().__init__()
         
         # Simulation control

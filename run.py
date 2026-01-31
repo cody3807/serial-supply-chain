@@ -1,11 +1,6 @@
 """
 Run script for the Split-Principal Supply Chain MARL Simulation.
-
-This script:
-1. Computes the centralized benchmark (system optimum)
-2. Runs the decentralized MARL simulation
-3. Compares performance against the benchmark
-4. Exports results to Excel
+Uses epsilon-greedy learning algorithm.
 """
 
 import numpy as np
@@ -18,46 +13,36 @@ import params
 
 
 def run_simulation(rounds=None, verbose=True):
-    """
-    Run the complete simulation with benchmark comparison.
-    """
+    """Run simulation with epsilon-greedy learning."""
     if rounds is None:
         rounds = params.ROUNDS
     
     print("=" * 60)
-    print("SPLIT-PRINCIPAL SUPPLY CHAIN MARL SIMULATION")
+    print("EPSILON-GREEDY SUPPLY CHAIN MARL SIMULATION")
     print("=" * 60)
     print()
     
-    # ============================================
-    # 1. COMPUTE CENTRALIZED BENCHMARK
-    # ============================================
+    # Compute benchmark
     print("STEP 1: Computing Centralized Benchmark")
     print("-" * 40)
     
     p_opt, s1_opt, s2_opt, profit_opt, cost_opt = compute_quick_optimum(verbose=True)
-    
-    # Update the benchmark for regret calculation
     params.CTOT_OPT = cost_opt
     
     print()
     
-    # ============================================
-    # 2. RUN DECENTRALIZED SIMULATION
-    # ============================================
-    print("STEP 2: Running Decentralized MARL Simulation")
+    # Run simulation
+    print("STEP 2: Running Epsilon-Greedy MARL Simulation")
     print("-" * 40)
-    print(f"Agents: Principal (unified), Marketing, Operations")
+    print(f"Agents: All using ε-greedy algorithm")
     print(f"Rounds: {rounds}")
     print(f"Learning: ε-greedy with decay ({params.EPS_START} → {params.EPS_END})")
     print()
     
-    # Create and run model with unified Principal
     model = TwoStageSupplyChainModel(
         agent_types=("principal", "greedy_m", "greedy_o")
     )
     
-    # Progress reporting
     report_interval = max(1, rounds // 10)
     
     for step in range(rounds):
@@ -69,18 +54,13 @@ def run_simulation(rounds=None, verbose=True):
     
     print()
     
-    # ============================================
-    # 3. COLLECT AND ANALYZE RESULTS
-    # ============================================
+    # Analyze results
     print("STEP 3: Analyzing Results")
     print("-" * 40)
     
     df_model = model.datacollector.get_model_vars_dataframe()
-    df_agents = model.datacollector.get_agent_vars_dataframe()
     
-    # Compute summary statistics
-    warmup_period = min(500, rounds // 5)  # Exclude early learning period
-    
+    warmup_period = min(500, rounds // 5)
     df_stable = df_model.iloc[warmup_period:]
     
     avg_cost = df_stable["Total Cost"].mean()
@@ -91,7 +71,6 @@ def run_simulation(rounds=None, verbose=True):
     avg_I2 = df_stable["I2 (Operations Inv)"].mean()
     final_cumulative_regret = df_model["Cumulative Regret"].iloc[-1]
     
-    # Most common actions in stable period
     mode_beta = df_stable["Beta"].mode().iloc[0] if len(df_stable["Beta"].mode()) > 0 else 0
     mode_sigma = df_stable["Sigma"].mode().iloc[0] if len(df_stable["Sigma"].mode()) > 0 else 0
     mode_price = df_stable["Price"].mode().iloc[0] if len(df_stable["Price"].mode()) > 0 else 0
@@ -101,11 +80,10 @@ def run_simulation(rounds=None, verbose=True):
     
     print(f"Centralized Optimal:")
     print(f"  p* = {p_opt}, s1* = {s1_opt}, s2* = {s2_opt}")
-    print(f"  (x derived from s2 using base-stock policy)")
     print(f"  Optimal Profit/period: {profit_opt:.2f}")
     print()
     
-    print(f"Decentralized (learned, stable period):")
+    print(f"Epsilon-Greedy Decentralized (learned, stable period):")
     print(f"  β = {mode_beta}, σ = {mode_sigma}")
     print(f"  p = {mode_price}, s1 = {mode_s1}, s2 = {mode_s2}, x = {mode_x}")
     print(f"  Avg Profit/period: {avg_profit:.2f}")
@@ -170,13 +148,13 @@ def run_simulation(rounds=None, verbose=True):
         ax.legend(loc="upper right")
         ax.grid(True, alpha=0.3)
     
-    plt.suptitle(f"Decision Variable Convergence (Efficiency: {efficiency:.1f}%)", 
+    plt.suptitle(f"Epsilon-Greedy Decision Variable Convergence (Efficiency: {efficiency:.1f}%)", 
                  fontsize=14, fontweight="bold")
     plt.tight_layout()
     
     # Save figure
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    plot_filename = f"convergence_plots_{timestamp}.png"
+    plot_filename = f"epsilon_greedy_convergence_plots_{timestamp}.png"
     plt.savefig(plot_filename, dpi=150, bbox_inches="tight")
     print(f"Plots saved to: {plot_filename}")
     
@@ -185,16 +163,15 @@ def run_simulation(rounds=None, verbose=True):
     print()
     
     print("=" * 60)
-    print("SIMULATION COMPLETE")
+    print("EPSILON-GREEDY SIMULATION COMPLETE")
     print("=" * 60)
     
-    return model, df_model, df_agents, {
+    return model, df_model, {
         'p_opt': p_opt, 's1_opt': s1_opt, 's2_opt': s2_opt,
-        'profit_opt': profit_opt, 'cost_opt': cost_opt,
-        'avg_profit': avg_profit, 'efficiency': efficiency
+        'profit_opt': profit_opt, 'efficiency': efficiency
     }
 
 
 if __name__ == "__main__":
-    # Run with parameters from params.py
-    model, df_model, df_agents, results = run_simulation(rounds=params.ROUNDS)
+    model, df_model, results = run_simulation()
+
