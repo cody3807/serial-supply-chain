@@ -117,7 +117,7 @@ def epsilon_at(t, rounds):
 # ============================================
 # Simulation Control
 # ============================================
-ROUNDS = 100000   # More rounds for better exploration
+ROUNDS = 5000     # More rounds for better exploration
 SEED = 42         # Random seed for reproducibility
 WARMUP = 2000     # Warmup period for benchmark estimation
 
