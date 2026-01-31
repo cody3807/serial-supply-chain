@@ -203,11 +203,11 @@ def compute_quick_optimum(verbose=True):
 
 def _env_step_once(
         rng, I1, I2, B1, B2, U1_prev, U2_prev,
-        s1_loc, s2_loc, lam, h1, h2, p_bo, alpha
+        s1_loc, s2_loc, price, h1, h2, p_bo, alpha
 ):
     """
     Legacy: Simulates inventory transitions within one period.
-    (Original Poisson demand model)
+    Updated to use Normal distribution via params.sample_demand.
     """
     # (1) arrivals
     I1 += U1_prev
@@ -228,14 +228,14 @@ def _env_step_once(
     U1 = ship
     U2 = O2
 
-    # (5) demand at retailer
-    D = int(rng.poisson(lam))
+    # (5) demand at retailer - NOW USES NORMAL DISTRIBUTION
+    D = params.sample_demand(rng, price)
     sales = min(I1, B1 + D)
     I1 -= sales
     B1 = B1 + D - sales
 
     # (6) end-of-period costs (match model.py)
-    H1 = (h1 + h2) * I1 + alpha * p_bo * B1
+    H1 = (h1 - h2) * I1 + alpha * p_bo * B1
     H2 = h2 * (I2 + U1) + (1.0 - alpha) * p_bo * B1
     total_cost = float(H1 + H2)
 
@@ -244,9 +244,10 @@ def _env_step_once(
 
 def estimate_avg_total_cost(
         *, s1_loc, s2_loc, seed,
-        rounds, warmup, lam, h1, h2, p_bo, alpha
+        rounds, warmup, price, h1, h2, p_bo, alpha
 ):
-    """Legacy: Estimate long-run average total cost under fixed (s1_loc, s2_loc)."""
+    """Legacy: Estimate long-run average total cost under fixed (s1_loc, s2_loc).
+    Updated to use Normal distribution via params.sample_demand."""
     rng = np.random.default_rng(seed)
     I1 = I2 = 0
     B1 = B2 = 0
@@ -257,7 +258,7 @@ def estimate_avg_total_cost(
     for t in range(rounds + warmup):
         I1, I2, B1, B2, U1_prev, U2_prev, c = _env_step_once(
             rng, I1, I2, B1, B2, U1_prev, U2_prev,
-            s1_loc, s2_loc, lam, h1, h2, p_bo, alpha
+            s1_loc, s2_loc, price, h1, h2, p_bo, alpha
         )
         if t >= warmup:
             total += c
@@ -269,9 +270,9 @@ def estimate_avg_total_cost(
 def compute_supply_optimum_local(
         *,
         s_lower, s_upper, seed,
-        rounds, warmup, lam, h1, h2, p_bo, alpha
+        rounds, warmup, price, h1, h2, p_bo, alpha
 ):
-    """Legacy: Enumerate over (s1, s2) for Poisson demand model."""
+    """Legacy: Enumerate over (s1, s2). Updated for Normal demand model."""
     best_s1 = s_lower
     best_s2 = s_lower
     best_cost = float("inf")
@@ -281,7 +282,7 @@ def compute_supply_optimum_local(
             c = estimate_avg_total_cost(
                 s1_loc=s1, s2_loc=s2,
                 seed=seed, rounds=rounds, warmup=warmup,
-                lam=lam, h1=h1, h2=h2, p_bo=p_bo, alpha=alpha,
+                price=price, h1=h1, h2=h2, p_bo=p_bo, alpha=alpha,
             )
             if c < best_cost:
                 best_cost = c

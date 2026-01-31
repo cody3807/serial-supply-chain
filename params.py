@@ -59,8 +59,8 @@ BETA_MAX = 50
 beta_range = np.arange(BETA_MIN, BETA_MAX + 1, 5, dtype=int)  # 0,5,10,...,50 (11 values)
 
 # Sigma - VERY WIDE range
-SIGMA_MIN = 10
-SIGMA_MAX = 70
+SIGMA_MIN = 0
+SIGMA_MAX = 60
 sigma_range = np.arange(SIGMA_MIN, SIGMA_MAX + 1, 5, dtype=int)  # 10,15,...,70 (13 values)
 
 def action_space():

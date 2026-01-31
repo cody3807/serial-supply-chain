@@ -122,6 +122,68 @@ def run_simulation(rounds=None, verbose=True):
     print(f"  Cumulative Regret: {final_cumulative_regret:.2f}")
     print()
     
+    # ============================================
+    # 4. PLOT DECISION VARIABLES OVER TIME
+    # ============================================
+    print("STEP 4: Plotting Decision Variables")
+    print("-" * 40)
+    
+    import matplotlib.pyplot as plt
+    
+    # Rolling window for smoothing
+    window = min(500, rounds // 20)
+    
+    # Decision variables to plot
+    decision_vars = {
+        "Beta": ("β (Buy Transfer Price)", "blue", None),
+        "Sigma": ("σ (Sell Transfer Price)", "orange", None),
+        "Price": ("p (Market Price)", "green", p_opt),
+        "S1 (Marketing)": ("s₁ (Marketing Base-Stock)", "red", s1_opt),
+        "S2 (Operations)": ("s₂ (Operations Base-Stock)", "purple", s2_opt),
+        "X (Production)": ("x (Production Quantity)", "brown", None),
+    }
+    
+    # Create figure with subplots
+    fig, axes = plt.subplots(3, 2, figsize=(14, 12))
+    axes = axes.flatten()
+    
+    time = df_model.index.values
+    
+    for idx, (col, (label, color, optimal)) in enumerate(decision_vars.items()):
+        ax = axes[idx]
+        
+        # Plot raw values (semi-transparent)
+        ax.plot(time, df_model[col], alpha=0.15, color=color, linewidth=0.5)
+        
+        # Plot rolling average
+        rolling_avg = df_model[col].rolling(window=window, min_periods=1).mean()
+        ax.plot(time, rolling_avg, color=color, linewidth=2, label=f"Rolling Avg (w={window})")
+        
+        # Plot optimal line if available
+        if optimal is not None:
+            ax.axhline(y=optimal, color='black', linestyle='--', linewidth=1.5, 
+                      label=f"Optimal = {optimal}")
+        
+        ax.set_xlabel("Time (Period)")
+        ax.set_ylabel(label)
+        ax.set_title(f"{label} Over Time")
+        ax.legend(loc="upper right")
+        ax.grid(True, alpha=0.3)
+    
+    plt.suptitle(f"Decision Variable Convergence (Efficiency: {efficiency:.1f}%)", 
+                 fontsize=14, fontweight="bold")
+    plt.tight_layout()
+    
+    # Save figure
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    plot_filename = f"convergence_plots_{timestamp}.png"
+    plt.savefig(plot_filename, dpi=150, bbox_inches="tight")
+    print(f"Plots saved to: {plot_filename}")
+    
+    # Show plot
+    plt.show()
+    print()
+    
     print("=" * 60)
     print("SIMULATION COMPLETE")
     print("=" * 60)
