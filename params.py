@@ -1,53 +1,115 @@
 """
-Parameter configuration for the two-stage serial supply chain (Local-Inventory game)
+Parameter configuration for the two-stage serial supply chain
+Split-Principal Architecture (Principal Beta & Principal Sigma)
+Based on Cachon & Zipkin (1999) and Kouvelis & Lariviere (2000)
 """
 
 import numpy as np
-from centralsolver import compute_supply_optimum_local
 
-# Cost structure
-H1 = 0.5          
-H2 = 0.5          
-P_BO = 50       
-ALPHA = 0.5       
+# ============================================
+# Cost Structure (Realistic)
+# ============================================
+# ============================================
+# Cost Structure (Realistic)
+# ============================================
+H1 = 5.0          # Retailer (Marketing) holding cost
+H2 = 3.0          # Supplier (Operations) holding cost
+P_BO = 30       # Total backorder penalty (π) - HUGE
+ALPHA = 0.5       # Penalty split ratio
+k = 0.1       # Convex production cost coefficient
 
-# End-customer demand
-a=100
-b=3
+# ============================================
+# Demand Parameters (Price-dependent Normal)
+# D ~ Normal(a - b*p, sigma_d)
+# ============================================
+a = 120         # Demand intercept - HUGE
+b = 1.5           # Price sensitivity coefficient  
+sigma_d = 10      # Demand standard deviation
 
-std_dev = 10
-p = [5,7,9,11,13,15]
+def sample_demand(rng, price):
+    """
+    Generate price-dependent stochastic demand.
+    D ~ Normal(mean = a - b*p, std = sigma_d)
+    Demand is constrained to be non-negative.
+    """
+    mean = max(0, a - b * price)
+    demand = rng.normal(mean, sigma_d)
+    return max(0, int(round(demand)))
 
-# production cost
-k = 4
-def sample_demand(rng,p):
- 
-    """One draw of consumer demand D_t ~ Poisson(LAM)"""
-    # Demand is depending on the price and follows a normal distribution
-    p=11
-    mean = a - b * p
-    #return int(rng.gauss(mean, std_dev))
-    return int(rng.normal(mean, std_dev,1))
+# ============================================
+# Action Spaces (WIDE - for realistic testing)
+# ============================================
 
-# Action space (base-stock levels)
-S_LOWER = 0
-S_UPPER = 60
-s_range = np.arange(S_LOWER, S_UPPER + 1, dtype=int)
+# Base-stock for Marketing (s1) - demand approx 1100
+S1_LOWER = 20
+S1_UPPER = 120
+s1_range = np.arange(S1_LOWER, S1_UPPER + 1, 5, dtype=int)
+
+# Base-stock for Operations (s2)
+S2_LOWER = 20
+S2_UPPER = 120
+s2_range = np.arange(S2_LOWER, S2_UPPER + 1, 5, dtype=int)
+
+# Legacy combined range (for backwards compatibility)
+s_range = s1_range
+
+# Price range for Marketing - wide range
+p_range = np.array([25, 30, 35, 40, 45, 50, 55, 60, 65], dtype=int)  # 9 values
+
+# Transfer price ranges - VERY WIDE for full exploration
+BETA_MIN = 0
+BETA_MAX = 70
+beta_range = np.arange(BETA_MIN, BETA_MAX + 1, 5, dtype=int)  # 0,5,10,...,30 (7 values)
+
+# Sigma - VERY WIDE range
+SIGMA_MIN = 0
+SIGMA_MAX = 70
+sigma_range = np.arange(SIGMA_MIN, SIGMA_MAX + 1, 5, dtype=int)  # 0,5,10,...,30 (7 values)
+
 def action_space():
-    """Return array of discrete base-stock levels"""
-    return np.arange(S_LOWER, S_UPPER + 1, dtype=int)
-# Action Space sigma, beta
-multiplier_p=2
+    """Return array of discrete base-stock levels (legacy)"""
+    return s_range
+
+def action_space_principal_beta():
+    """Return array of discrete beta (buy price) values"""
+    return beta_range
+
+def action_space_principal_sigma():
+    """Return array of discrete sigma (sell price) values"""
+    return sigma_range
+
 def action_space_principal():
-    price_range = np.arange(min(p) * -multiplier_p, max(p) * multiplier_p + 1,3, dtype=int)
+    """
+    Return array of (beta, sigma) tuples for unified Principal agent.
+    Principal controls both transfer prices to minimize total system cost.
+    """
     action_space = []
-    for i in price_range:
-        for j in price_range:
-            action_space.append((i,j))
+    for beta in beta_range:
+        for sigma in sigma_range:
+            action_space.append((int(beta), int(sigma)))
     return np.array(action_space)
-# ε-greedy schedule
-EPS_START = 0.8
-EPS_END   = 0.05
+
+def action_space_marketing():
+    """
+    Return array of (s1, p) tuples for Marketing agent.
+    s1: base-stock level, p: market price
+    """
+    action_space = []
+    for s1 in s1_range:
+        for p in p_range:
+            action_space.append((int(s1), int(p)))
+    return np.array(action_space)
+
+def action_space_operations():
+    """Return array of discrete s2 base-stock levels for Operations agent."""
+    return s2_range
+
+# ============================================
+# ε-greedy Learning Schedule
+# ============================================
+EPS_START = 0.90   # More exploration initially
+EPS_END = 0.01     # Small residual exploration
+
 def epsilon_at(t, rounds):
     """Linear decay of epsilon from EPS_START → EPS_END over [0, rounds-1]"""
     if rounds <= 1:
@@ -55,33 +117,16 @@ def epsilon_at(t, rounds):
     frac = np.clip(t, 0, rounds - 1) / (rounds - 1)
     return (1.0 - frac) * EPS_START + frac * EPS_END
 
-# Simulation control
-ROUNDS = 3650
-SEED   = 42
+# ============================================
+# Simulation Control
+# ============================================
+ROUNDS = 1000000     # More rounds for better exploration
+SEED = 42        # Random seed for reproducibility
+WARMUP = 2000     # Warmup period for benchmark estimation
 
-#Action space for marketing
-def action_space_marketing():
-    """Return array of discrete base-stock levels for marketing agent"""
-    action_space=[]
-    for i in s_range:
-        for j in p:
-            action_space.append((i,j))
-    return np.array(action_space)
-
-#Action space for marketing
-def action_space_operation():
-    """Return array of discrete base-stock levels for marketing agent"""
-    action_space=[]
-    for i in s_range:
-        for j in p:
-            action_space.append((i,j))
-    return np.array(action_space)
-# Benchmark (Echeleon base stock levels, transferred to local base-stocks)
-WARMUP = 200 # start to estimate here
-S1_OPT_LOC, S2_OPT_LOC, CTOT_OPT = compute_supply_optimum_local(
-    s_lower=S_LOWER, s_upper=S_UPPER, seed=SEED,
-    rounds=ROUNDS, warmup=WARMUP, lam=p[0],
-    h1=H1, h2=H2,p_bo=P_BO, alpha=ALPHA
-)
-
-
+# ============================================
+# Centralized Benchmark (computed at import time)
+# ============================================
+# Note: The benchmark will be computed in centralsolver.py
+# and imported separately to avoid circular dependencies
+CTOT_OPT = 0.0  # Placeholder - will be set after running centralsolver
