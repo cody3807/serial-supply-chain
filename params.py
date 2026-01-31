@@ -14,7 +14,7 @@ import numpy as np
 # ============================================
 H1 = 5.0          # Retailer (Marketing) holding cost
 H2 = 3.0          # Supplier (Operations) holding cost
-P_BO = 1000       # Total backorder penalty (π) - HUGE
+P_BO = 30       # Total backorder penalty (π) - HUGE
 ALPHA = 0.5       # Penalty split ratio
 k = 0.35          # Convex production cost coefficient
 
@@ -22,7 +22,7 @@ k = 0.35          # Convex production cost coefficient
 # Demand Parameters (Price-dependent Normal)
 # D ~ Normal(a - b*p, sigma_d)
 # ============================================
-a = 1200          # Demand intercept - HUGE
+a = 120         # Demand intercept - HUGE
 b = 1.5           # Price sensitivity coefficient  
 sigma_d = 10      # Demand standard deviation
 
@@ -63,7 +63,7 @@ beta_range = np.arange(BETA_MIN, BETA_MAX + 1, 5, dtype=int)  # 0,5,10,...,50 (1
 
 # Sigma - VERY WIDE range
 SIGMA_MIN = 0
-SIGMA_MAX = 60
+SIGMA_MAX = 70
 sigma_range = np.arange(SIGMA_MIN, SIGMA_MAX + 1, 5, dtype=int)  # 10,15,...,70 (13 values)
 
 def action_space():
@@ -120,8 +120,8 @@ def epsilon_at(t, rounds):
 # ============================================
 # Simulation Control
 # ============================================
-ROUNDS = 5000     # More rounds for better exploration
-SEED = 42         # Random seed for reproducibility
+ROUNDS = 10000     # More rounds for better exploration
+SEED = 42        # Random seed for reproducibility
 WARMUP = 2000     # Warmup period for benchmark estimation
 
 # ============================================
