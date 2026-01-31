@@ -10,17 +10,17 @@ def create_agents(model, agent_types):
     """Create agents given list of agent types."""
     for i in range(len(agent_types)):
         if agent_types[i] == "greedy_m":
-            GreedyMAgent.create_agents(model, n=1)
+            GreedyMAgent(model)
         elif agent_types[i] == "ucb_p":
-            UcbPAgent.create_agents(model, n=1)
+            UcbPAgent(model)
         elif agent_types[i] == "greedy_p":
-            GreedyPAgent.create_agents(model, n=1)
+            GreedyPAgent(model)
         elif agent_types[i] == "greedy_o":
-            GreedyOAgent.create_agents(model, n=1)
+            GreedyOAgent(model)
         elif agent_types[i] == "ucb_m":
-            UcbMAgent.create_agents(model, n=1)
+            UcbMAgent(model)
         elif agent_types[i] == "ucb_o":
-            UcbOAgent.create_agents(model, n=1)
+            UcbOAgent(model)
 
 class TwoStageSupplyChainModel(Model):
     def __init__(self, agent_types=("ucb_p", "ucb_m","ucb_o")):
@@ -164,10 +164,11 @@ class TwoStageSupplyChainModel(Model):
         self.cost_H2 = float(H2)
         self.reward_marketing = -float(H1)
         self.reward_operations = -float(H2)
-        punishment = 0.5 * (self.sigma_principal - self.beta_principal) * U1
-        self.reward_principle = -float(H1 + H2) + punishment
+        
+        principal_reward = -float(H1 + H2)
+        self.reward_principle = principal_reward
 
-        return -float(H1 + H2), -float(H1), -float(H2)
+        return principal_reward, -float(H1), -float(H2)
 
     # Simulate one round
     def step(self):

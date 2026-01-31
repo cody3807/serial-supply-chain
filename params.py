@@ -8,7 +8,7 @@ from centralsolver import compute_supply_optimum_local
 # Cost structure
 H1 = 3         
 H2 = 5        
-P_BO = 30      
+P_BO = 15      
 ALPHA = 0.5      
 
 # End-customer demand
@@ -37,14 +37,14 @@ def action_space():
     """Return array of discrete base-stock levels"""
     return np.arange(S_LOWER, S_UPPER + 1, 5, dtype=int)
 # Action Space sigma, beta
+# σ = β zorunlu (tek transfer fiyatı)
 multiplier_p=2
 def action_space_principal():
-    price_range = np.arange(0, 71,5, dtype=int)
+    """Principal sadece σ = β seçebilir (tek transfer price)"""
+    price_range = np.arange(0, 71, 5, dtype=int)
     
-    action_space = []
-    for i in price_range:
-        for j in price_range:
-            action_space.append((i,j))
+    # Sadece σ = β kombinasyonları
+    action_space = [(p, p) for p in price_range]
     return np.array(action_space)
 # ε-greedy schedule
 EPS_START = 0.80
@@ -80,14 +80,16 @@ def action_space_operation():
 # Benchmark (Echeleon base stock levels, transferred to local base-stocks)
 WARMUP = 2000 # start to estimate here
 
+# Placeholder values - comment out the loop below for faster execution
+CTOT_OPT = 0.0  # Will be computed if needed
 
-for i in p:
-    S1_OPT_LOC, S2_OPT_LOC, CTOT_OPT = compute_supply_optimum_local(
-        s_lower=S_LOWER, s_upper=S_UPPER, seed=SEED,
-        rounds=ROUNDS, warmup=WARMUP, lam=i,
-        h1=H1, h2=H2,p_bo=P_BO, alpha=ALPHA
-    )
-
-    print(i,S1_OPT_LOC, S2_OPT_LOC, CTOT_OPT)
+# Uncomment below to compute optimal values (slow)
+# for i in p:
+#     S1_OPT_LOC, S2_OPT_LOC, CTOT_OPT = compute_supply_optimum_local(
+#         s_lower=S_LOWER, s_upper=S_UPPER, seed=SEED,
+#         rounds=ROUNDS, warmup=WARMUP, lam=i,
+#         h1=H1, h2=H2,p_bo=P_BO, alpha=ALPHA
+#     )
+#     print(i,S1_OPT_LOC, S2_OPT_LOC, CTOT_OPT)
 
 
