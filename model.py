@@ -208,22 +208,22 @@ class TwoStageSupplyChainModel(Model):
         # Production gating: Only produce if profitable
         # Marginal cost = d(k*x²)/dx = 2*k*x
         # Profitable if: β >= 2*k*x → x <= β/(2*k)
-        if params.k > 0:
-            max_profitable_x = int(self.beta / (2 * params.k))
-            self.x = min(self.x, max_profitable_x)
+        # if params.k > 0:
+        #     max_profitable_x = int(self.beta / (2 * params.k))
+        #     self.x = min(self.x, max_profitable_x)
         
         # Production: I2 increases by x
         self.I2 += self.x
         
         # Shipment gating: Marketing only orders if market price covers transfer cost
         # Profitable if: p >= σ
-        if self.p >= self.sigma:
-            self.shipment = min(self.y, self.I2)
-        else:
-            # Not profitable to order - shipment blocked
-            self.shipment = 0
-            self.y = 0  # Reflect that no order was placed
-        
+        # if self.p >= self.sigma:
+        #     self.shipment = min(self.y, self.I2)
+        # else:
+        #     # Not profitable to order - shipment blocked
+        #     self.shipment = 0
+        #     self.y = 0  # Reflect that no order was placed
+        self.shipment = min(self.y, self.I2)
         self.I2 -= self.shipment
         self.I1 += self.shipment
         

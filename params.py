@@ -9,17 +9,20 @@ import numpy as np
 # ============================================
 # Cost Structure (Realistic)
 # ============================================
+# ============================================
+# Cost Structure (Realistic)
+# ============================================
 H1 = 5.0          # Retailer (Marketing) holding cost
 H2 = 3.0          # Supplier (Operations) holding cost
-P_BO = 30         # Total backorder penalty (π) - high to avoid stockouts
-ALPHA = 0.5       # Penalty split ratio - equal split for better coordination
-k = 0.35          # Convex production cost coefficient - HIGH to penalize overproduction
+P_BO = 1000       # Total backorder penalty (π) - HUGE
+ALPHA = 0.5       # Penalty split ratio
+k = 0.35          # Convex production cost coefficient
 
 # ============================================
 # Demand Parameters (Price-dependent Normal)
 # D ~ Normal(a - b*p, sigma_d)
 # ============================================
-a = 120           # Demand intercept
+a = 1200          # Demand intercept - HUGE
 b = 1.5           # Price sensitivity coefficient  
 sigma_d = 10      # Demand standard deviation
 
@@ -37,15 +40,15 @@ def sample_demand(rng, price):
 # Action Spaces (WIDE - for realistic testing)
 # ============================================
 
-# Base-stock for Marketing (s1) - optimal s1* = 55
+# Base-stock for Marketing (s1) - demand approx 1100
 S1_LOWER = 20
 S1_UPPER = 120
-s1_range = np.arange(S1_LOWER, S1_UPPER + 1, 10, dtype=int)  # 20,30,...,120 (11 values)
+s1_range = np.arange(S1_LOWER, S1_UPPER + 1, 25, dtype=int)
 
-# Base-stock for Operations (s2) - optimal s2* = 40
+# Base-stock for Operations (s2)
 S2_LOWER = 20
 S2_UPPER = 120
-s2_range = np.arange(S2_LOWER, S2_UPPER + 1, 10, dtype=int)  # 20,30,...,120 (11 values)
+s2_range = np.arange(S2_LOWER, S2_UPPER + 1, 25, dtype=int)
 
 # Legacy combined range (for backwards compatibility)
 s_range = s1_range

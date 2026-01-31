@@ -49,7 +49,11 @@ def _simulate_period(rng, I1, I2, p, s1, s2):
     # Calculate profit (negative cost)
     revenue = p * sales
     production_cost = params.k * (x ** 2)  # Convex cost
-    holding_costs = params.H1 * I1 + params.H2 * I2
+    # ECHELON inventory costs (same as agents.py for consistency)
+    # Marketing: (H1-H2) × I1 (incremental cost)
+    # Operations: H2 × (I1+I2) (responsible for all downstream)
+    # Total = (H1-H2)×I1 + H2×(I1+I2) = H1×I1 + H2×I2 (mathematically equivalent)
+    holding_costs = (params.H1 - params.H2) * I1 + params.H2 * (I1 + I2)
     backorder_cost = params.P_BO * backorders
     
     period_profit = revenue - production_cost - holding_costs - backorder_cost
