@@ -107,8 +107,8 @@ def action_space_operations():
 # ============================================
 # ε-greedy Learning Schedule
 # ============================================
-EPS_START = 0.80   # More exploration initially
-EPS_END = 0.02     # Small residual exploration
+EPS_START = 0.90   # More exploration initially
+EPS_END = 0.01     # Small residual exploration
 
 def epsilon_at(t, rounds):
     """Linear decay of epsilon from EPS_START → EPS_END over [0, rounds-1]"""
@@ -120,7 +120,7 @@ def epsilon_at(t, rounds):
 # ============================================
 # Simulation Control
 # ============================================
-ROUNDS = 100000     # More rounds for better exploration
+ROUNDS = 1000000     # More rounds for better exploration
 SEED = 42        # Random seed for reproducibility
 WARMUP = 2000     # Warmup period for benchmark estimation
 

@@ -340,4 +340,5 @@ class TwoStageSupplyChainModel(Model):
         self.t += 1
         
         # Collect data
+        
         self.datacollector.collect(self)
