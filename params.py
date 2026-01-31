@@ -16,7 +16,7 @@ H1 = 5.0          # Retailer (Marketing) holding cost
 H2 = 3.0          # Supplier (Operations) holding cost
 P_BO = 30       # Total backorder penalty (π) - HUGE
 ALPHA = 0.5       # Penalty split ratio
-k = 0.35          # Convex production cost coefficient
+k = 0.1       # Convex production cost coefficient
 
 # ============================================
 # Demand Parameters (Price-dependent Normal)
@@ -43,12 +43,12 @@ def sample_demand(rng, price):
 # Base-stock for Marketing (s1) - demand approx 1100
 S1_LOWER = 20
 S1_UPPER = 120
-s1_range = np.arange(S1_LOWER, S1_UPPER + 1, 25, dtype=int)
+s1_range = np.arange(S1_LOWER, S1_UPPER + 1, 5, dtype=int)
 
 # Base-stock for Operations (s2)
 S2_LOWER = 20
 S2_UPPER = 120
-s2_range = np.arange(S2_LOWER, S2_UPPER + 1, 25, dtype=int)
+s2_range = np.arange(S2_LOWER, S2_UPPER + 1, 5, dtype=int)
 
 # Legacy combined range (for backwards compatibility)
 s_range = s1_range
@@ -58,13 +58,13 @@ p_range = np.array([25, 30, 35, 40, 45, 50, 55, 60, 65], dtype=int)  # 9 values
 
 # Transfer price ranges - VERY WIDE for full exploration
 BETA_MIN = 0
-BETA_MAX = 50
-beta_range = np.arange(BETA_MIN, BETA_MAX + 1, 5, dtype=int)  # 0,5,10,...,50 (11 values)
+BETA_MAX = 70
+beta_range = np.arange(BETA_MIN, BETA_MAX + 1, 5, dtype=int)  # 0,5,10,...,30 (7 values)
 
 # Sigma - VERY WIDE range
 SIGMA_MIN = 0
 SIGMA_MAX = 70
-sigma_range = np.arange(SIGMA_MIN, SIGMA_MAX + 1, 5, dtype=int)  # 10,15,...,70 (13 values)
+sigma_range = np.arange(SIGMA_MIN, SIGMA_MAX + 1, 5, dtype=int)  # 0,5,10,...,30 (7 values)
 
 def action_space():
     """Return array of discrete base-stock levels (legacy)"""
@@ -120,7 +120,7 @@ def epsilon_at(t, rounds):
 # ============================================
 # Simulation Control
 # ============================================
-ROUNDS = 10000     # More rounds for better exploration
+ROUNDS = 100000     # More rounds for better exploration
 SEED = 42        # Random seed for reproducibility
 WARMUP = 2000     # Warmup period for benchmark estimation
 

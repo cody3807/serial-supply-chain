@@ -249,6 +249,9 @@ def run_ucb_simulation(rounds=None, verbose=True):
     report_interval = max(1, rounds // 10)
     
     for step in range(rounds):
+        if (step == 5001):
+            print("Re-seeding RNG for extended exploration...")
+            
         model.step()
         
         if verbose and (step + 1) % report_interval == 0:

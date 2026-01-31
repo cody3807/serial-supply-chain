@@ -291,9 +291,10 @@ class TwoStageSupplyChainModel(Model):
         # - Decrease β (pay less to Operations) → reduces Operations over-production
         # But balanced by system profit which needs sales to happen
         # Weight = 0.5 for balanced incentive
-        principal_margin = 0.5 * (self.sigma - self.beta) * self.shipment
         
-        self.reward_principal = system_profit + principal_margin
+        #principal_margin = 1.0 * (self.sigma - self.beta) * self.shipment
+        
+        self.reward_principal = system_profit #+ principal_margin
         self.reward_beta = system_profit  # For backwards compatibility
         self.reward_sigma = system_profit
         
