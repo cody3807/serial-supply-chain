@@ -112,7 +112,8 @@ class UCBOperationsAgent(OperationsAgent, UCBMixin):
     def select_action(self):
         self.select_action_ucb()
         if self.action is not None:
-            self.s2 = int(self.action)
+            self.s2 = int(self.action[0])
+            self.tp = int(self.action[1])
 
 
 # ============================================
@@ -125,7 +126,7 @@ from mesa.datacollection import DataCollector
 
 def create_ucb_agents(model):
     """Create UCB agents with unified Principal."""
-    UCBPrincipalAgent(model)  # Unified principal
+    #UCBPrincipalAgent(model)  # Unified principal
     UCBMarketingAgent(model)
     UCBOperationsAgent(model)
 

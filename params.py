@@ -55,6 +55,7 @@ s_range = s1_range
 
 # Price range for Marketing - wide range
 p_range = np.array([25, 30, 35, 40, 45, 50, 55, 60, 65], dtype=int)  # 9 values
+tp_range = np.array([20,25,30,35,40,45,50,55,60], dtype=int)  # 9 values
 
 # Transfer price ranges - VERY WIDE for full exploration
 BETA_MIN = 0
@@ -102,7 +103,11 @@ def action_space_marketing():
 
 def action_space_operations():
     """Return array of discrete s2 base-stock levels for Operations agent."""
-    return s2_range
+    action_space = []
+    for s2 in s2_range:
+        for tp in tp_range: 
+            action_space.append((int(s2), int(tp)))  # Transfer price same as beta_range
+    return np.array(action_space)
 
 # ============================================
 # ε-greedy Learning Schedule

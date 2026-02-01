@@ -227,19 +227,22 @@ class OperationsAgent(BaseGreedyAgent):
     
     def __init__(self, model):
         # Only s2 in action space now (not s2, x)
-        action_space = params.s2_range  # Just base-stock levels for Operations
+        action_space = params.action_space_operations()  # Just base-stock levels for Operations
         super().__init__(model, action_space)
         self.name = "Operations"
         
         # Current decisions
         self.s2 = 0  # Base-stock level
         self.x = 0   # Production quantity (derived)
+        self.tp = 0  # Transfer price (for reference)
     
     def select_action(self):
         """Select s2 action (base-stock level only)."""
         super().select_action()
         if self.action is not None:
-            self.s2 = int(self.action)  # Single action, not tuple
+            #self.s2 = int(self.action)  # Single action, not tuple
+            self.s2 = int(self.action[0])
+            self.tp = max(5, int(self.action[1]))  # Ensure p > 0
     
     def compute_production(self, I2):
         """

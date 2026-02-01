@@ -78,6 +78,7 @@ class TwoStageSupplyChainModel(Model):
         # Decision variables (for reporting)
         self.beta = 0.0   # Buy price from Principal Beta
         self.sigma = 0.0  # Sell price from Principal Sigma
+        self.tp = 0.0     # Transfer price set by Operations (for reference)
         self.p = 0        # Market price from Marketing
         self.s1 = 0       # Base-stock level for Marketing
         self.s2 = 0       # Base-stock level for Operations
@@ -170,7 +171,7 @@ class TwoStageSupplyChainModel(Model):
             principal.select_action()
             self.beta = principal.get_beta()
             self.sigma = principal.get_sigma()
-        else:
+        elif principal_beta or principal_sigma:
             # Fallback to split principals
             if principal_beta:
                 principal_beta.select_action()
@@ -195,6 +196,9 @@ class TwoStageSupplyChainModel(Model):
         if operations:
             operations.select_action()
             self.s2 = operations.s2
+            self.tp = operations.tp  # For reference
+            self.beta = self.tp  # Ensure consistency
+            self.sigma = self.tp  # Ensure consistency
             self.x = operations.compute_production(self.I2)  # x = max(0, s2 - I2)
         # ============================================
         # 4. PHYSICAL FLOW (Production & Shipping)
