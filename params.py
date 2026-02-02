@@ -59,13 +59,13 @@ tp_range = np.array([20,25,30,35,40,45,50,55,60], dtype=int)  # 9 values
 
 # Transfer price ranges - VERY WIDE for full exploration
 BETA_MIN = 0
-BETA_MAX = 70
-beta_range = np.arange(BETA_MIN, BETA_MAX + 1, 5, dtype=int)  # 0,5,10,...,30 (7 values)
+BETA_MAX = 15
+beta_range = np.arange(BETA_MIN, BETA_MAX + 1, 1, dtype=int)  # 0,5,10,...,30 (7 values)
 
 # Sigma - VERY WIDE range
 SIGMA_MIN = 0
-SIGMA_MAX = 70
-sigma_range = np.arange(SIGMA_MIN, SIGMA_MAX + 1, 5, dtype=int)  # 0,5,10,...,30 (7 values)
+SIGMA_MAX = 1
+sigma_range = np.arange(SIGMA_MIN, SIGMA_MAX + .1, .05, dtype=float)  # 0,5,10,...,30 (7 values)
 
 def action_space():
     """Return array of discrete base-stock levels (legacy)"""
@@ -125,9 +125,9 @@ def epsilon_at(t, rounds):
 # ============================================
 # Simulation Control
 # ============================================
-ROUNDS = 1000000     # More rounds for better exploration
+ROUNDS = 5000     # More rounds for better exploration
 SEED = 42        # Random seed for reproducibility
-WARMUP = 2000     # Warmup period for benchmark estimation
+WARMUP = 1000     # Warmup period for benchmark estimation
 
 # ============================================
 # Centralized Benchmark (computed at import time)

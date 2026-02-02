@@ -429,7 +429,7 @@ if __name__ == "__main__":
         s1_range=params.s1_range,
         s2_range=params.s2_range,
         # update rounds back to params.ROUNDS after testing
-        rounds=10000,
+        rounds=5000,
         warmup=1000,
         verbose=True
     )
