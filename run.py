@@ -60,7 +60,7 @@ def run_simulation(rounds=None, verbose=True):
     
     df_model = model.datacollector.get_model_vars_dataframe()
     
-    warmup_period = min(500, rounds // 5)
+    warmup_period = rounds // 5
     df_stable = df_model.iloc[warmup_period:]
     
     avg_cost = df_stable["Total Cost"].mean()

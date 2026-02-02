@@ -64,7 +64,7 @@ beta_range = np.arange(BETA_MIN, BETA_MAX + 1, 1, dtype=int)  # 0,5,10,...,30 (7
 # Sigma - VERY WIDE range
 SIGMA_MIN = 0
 SIGMA_MAX = 1
-sigma_range = np.arange(SIGMA_MIN, SIGMA_MAX + .1, .05, dtype=float)  # 0,5,10,...,30 (7 values)
+sigma_range = np.arange(SIGMA_MIN, SIGMA_MAX + .05, .05, dtype=float)  # 0,5,10,...,30 (7 values)
 
 def action_space():
     """Return array of discrete base-stock levels (legacy)"""
