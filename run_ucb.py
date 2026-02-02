@@ -133,9 +133,10 @@ def create_ucb_agents(model):
 class UCBSupplyChainModel(TwoStageSupplyChainModel):
     """Supply chain model using UCB1 learning."""
     
-    def __init__(self):
+    def __init__(self, seed=None):
         # Skip parent __init__ and set up manually
-        Model.__init__(self)
+        # Pass seed to Mesa's Model to make agent random choices reproducible
+        Model.__init__(self, seed=seed if seed is not None else params.SEED)
         
         # Simulation control
         self.rng = np.random.default_rng(params.SEED)
@@ -266,7 +267,7 @@ def run_ucb_simulation(rounds=None, verbose=True):
     
     df_model = model.datacollector.get_model_vars_dataframe()
     
-    warmup_period = min(1000, rounds // 5)
+    warmup_period = rounds // 5
     df_stable = df_model.iloc[warmup_period:]
     
     avg_cost = df_stable["Total Cost"].mean()

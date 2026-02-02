@@ -277,7 +277,7 @@ class TwoStageSupplyChainModel(Model):
         # Total cost = all costs - revenue
         revenue = self.p * self.sales
         production_cost = params.k * (self.x ** 2)
-        holding_costs = params.H2 * (self.I1 + self.I2) + (params.H1-params.H2) * self.I1
+        holding_costs = params.H2 * (self.I2) + (params.H1-params.H2) * self.I1
         backorder_cost = params.P_BO * self.backorders
         
         self.total_cost = production_cost + holding_costs + backorder_cost - revenue
