@@ -4,6 +4,7 @@ Uses epsilon-greedy learning algorithm.
 """
 
 import numpy as np
+import random
 import pandas as pd
 from datetime import datetime
 
@@ -11,15 +12,23 @@ from model import TwoStageSupplyChainModel
 from centralsolver import compute_quick_optimum
 import params
 
+# Reproducibility
+SEED = 42
 
-def run_simulation(rounds=None, verbose=True):
+
+def run_simulation(rounds=None, verbose=True, seed=SEED):
     """Run simulation with epsilon-greedy learning."""
     if rounds is None:
         rounds = params.ROUNDS
     
+    # Seed sabitleme
+    np.random.seed(seed)
+    random.seed(seed)
+    
     print("=" * 60)
     print("EPSILON-GREEDY SUPPLY CHAIN MARL SIMULATION")
     print("=" * 60)
+    print(f"Seed: {seed}")
     print()
     
     # Compute benchmark
@@ -40,7 +49,8 @@ def run_simulation(rounds=None, verbose=True):
     print()
     
     model = TwoStageSupplyChainModel(
-        agent_types=("principal", "greedy_m", "greedy_o")
+        agent_types=("principal", "greedy_m", "greedy_o"),
+        seed=seed
     )
     
     report_interval = max(1, rounds // 10)

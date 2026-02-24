@@ -60,11 +60,14 @@ class TwoStageSupplyChainModel(Model):
     - Operations: Supplier managing inventory I2, sets base-stock s2 and production x
     """
     
-    def __init__(self, agent_types=("principal", "greedy_m", "greedy_o")):
-        super().__init__()
+    def __init__(self, agent_types=("principal", "greedy_m", "greedy_o"), seed=None):
+        # Pass seed to Mesa's Model to make agent random choices reproducible
+        if seed is None:
+            seed = params.SEED
+        super().__init__(seed=seed)
         
         # Simulation control
-        self.rng = np.random.default_rng(params.SEED)
+        self.rng = np.random.default_rng(seed)
         self.t = 0
         
         # Initialize agents
