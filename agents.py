@@ -265,7 +265,7 @@ class OperationsAgent(BaseGreedyAgent):
         """
         transfer_revenue = beta * shipped  # Only get paid for what's shipped!
         production_cost = k * (x ** 2)  # Convex cost for ALL production
-        holding_cost = h2 * (I2)  # Echelon: all downstream inventory
+        holding_cost = h2 * (I1 + I2)  # Echelon: all downstream inventory
         backorder_cost = (1 - alpha) * pi * backorders
         return transfer_revenue - production_cost - holding_cost - backorder_cost
 

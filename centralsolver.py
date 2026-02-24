@@ -53,7 +53,7 @@ def _simulate_period(rng, I1, I2, p, s1, s2):
     # Marketing: (H1-H2) × I1 (incremental cost)
     # Operations: H2 × (I1+I2) (responsible for all downstream)
     # Total = (H1-H2)×I1 + H2×(I1+I2) = H1×I1 + H2×I2 (mathematically equivalent)
-    holding_costs = (params.H1 - params.H2) * I1 + params.H2 *  I2
+    holding_costs = (params.H1 - params.H2) * I1 + params.H2 *  (I2 + I1)
     backorder_cost = params.P_BO * backorders
     
     period_profit = revenue - production_cost - holding_costs - backorder_cost
@@ -205,69 +205,69 @@ def compute_quick_optimum(verbose=True):
 # Legacy Functions (for backwards compatibility)
 # ============================================
 
-def _env_step_once(
-        rng, I1, I2, B1, B2,
-        s1_loc, s2_loc, price, h1, h2, p_bo, alpha
-):
-    """
-    Simulates inventory transitions within one period.
-    Updated to use Normal distribution via params.sample_demand.
-    Lead time = 0, so orders arrive immediately in the same period.
+# def _env_step_once(
+#         rng, I1, I2, B1, B2,
+#         s1_loc, s2_loc, price, h1, h2, p_bo, alpha
+# ):
+#     """
+#     Simulates inventory transitions within one period.
+#     Updated to use Normal distribution via params.sample_demand.
+#     Lead time = 0, so orders arrive immediately in the same period.
     
-    Returns: (I1, I2, B1, B2, total_cost, period_profit, sales)
-    """
-    # (1) local inventory positions
-    IP1 = I1 - B1
-    IP2 = I2 - B2
+#     Returns: (I1, I2, B1, B2, total_cost, period_profit, sales)
+#     """
+#     # (1) local inventory positions
+#     IP1 = I1 - B1
+#     IP2 = I2 - B2
 
-    # (2) order-up-to (local base stock)
-    O1 = max(0, int(s1_loc) - int(IP1))
-    O2 = max(0, int(s2_loc) - int(IP2))
+#     # (2) order-up-to (local base stock)
+#     O1 = max(0, int(s1_loc) - int(IP1))
+#     O2 = max(0, int(s2_loc) - int(IP2))
 
-    # (3) arrivals (lead time = 0, orders arrive immediately)
-    # Operations receives from external source (production)
-    I2 += O2
+#     # (3) arrivals (lead time = 0, orders arrive immediately)
+#     # Operations receives from external source (production)
+#     I2 += O2
     
-    # (4) releases (supplier ships to retailer)
-    ship = min(I2, B2 + O1)
-    I2 -= ship
-    B2 = B2 + O1 - ship
-    # Marketing receives shipment immediately
-    I1 += ship
+#     # (4) releases (supplier ships to retailer)
+#     ship = min(I2, B2 + O1)
+#     I2 -= ship
+#     B2 = B2 + O1 - ship
+#     # Marketing receives shipment immediately
+#     I1 += ship
 
-    # (5) demand at retailer - USES NORMAL DISTRIBUTION
-    D = params.sample_demand(rng, price)
-    sales = min(I1, B1 + D)
-    I1 -= sales
-    B1 = B1 + D - sales
+#     # (5) demand at retailer - USES NORMAL DISTRIBUTION
+#     D = params.sample_demand(rng, price)
+#     sales = min(I1, B1 + D)
+#     I1 -= sales
+#     B1 = B1 + D - sales
 
-    # (6) period profit and costs
-    # Revenue
-    revenue = price * sales
+#     # (6) period profit and costs
+#     # Revenue
+#     revenue = price * sales
     
-    # Production cost: k * x^2 where x = O2 (production quantity)
-    production_cost = params.k * (O2 ** 2)
+#     # Production cost: k * x^2 where x = O2 (production quantity)
+#     production_cost = params.k * (O2 ** 2)
     
-    # Holding costs (echelon accounting)
-    # Marketing: (h1-h2) * I1 (incremental)
-    # Operations: h2 * (I1+I2) (total downstream)
-    # Total = h1*I1 + h2*I2 (mathematically equivalent)
-    holding_cost_marketing = (h1 - h2) * I1
-    holding_cost_operations = h2 * (I1 + I2)
+#     # Holding costs (echelon accounting)
+#     # Marketing: (h1-h2) * I1 (incremental)
+#     # Operations: h2 * (I1+I2) (total downstream)
+#     # Total = h1*I1 + h2*I2 (mathematically equivalent)
+#     holding_cost_marketing = (h1 - h2) * I1
+#     holding_cost_operations = h2 * (I1 + I2)
     
-    # Backorder costs (split according to alpha)
-    backorder_cost_marketing = alpha * p_bo * B1
-    backorder_cost_operations = (1.0 - alpha) * p_bo * B1
+#     # Backorder costs (split according to alpha)
+#     backorder_cost_marketing = alpha * p_bo * B1
+#     backorder_cost_operations = (1.0 - alpha) * p_bo * B1
     
-    # Total costs for each agent
-    H1 = holding_cost_marketing + backorder_cost_marketing
-    H2 = holding_cost_operations + backorder_cost_operations + production_cost
-    total_cost = float(H1 + H2)
+#     # Total costs for each agent
+#     H1 = holding_cost_marketing + backorder_cost_marketing
+#     H2 = holding_cost_operations + backorder_cost_operations + production_cost
+#     total_cost = float(H1 + H2)
     
-    # System profit
-    period_profit = revenue - production_cost - (holding_cost_marketing + holding_cost_operations) - (backorder_cost_marketing + backorder_cost_operations)
+#     # System profit
+#     period_profit = revenue - production_cost - (holding_cost_marketing + holding_cost_operations) - (backorder_cost_marketing + backorder_cost_operations)
 
-    return I1, I2, B1, B2, total_cost, period_profit, sales
+#     return I1, I2, B1, B2, total_cost, period_profit, sales
 
 
 def estimate_avg_total_cost(
