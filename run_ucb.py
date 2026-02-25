@@ -322,8 +322,8 @@ def run_ucb_simulation(rounds=None, verbose=True):
     
     # Decision variables to plot
     decision_vars = {
-        "Beta": ("β (Buy Transfer Price)", "blue", None),
-        "Sigma": ("σ (Sell Transfer Price)", "orange", None),
+        "Beta": ("Transfer Price", "blue", None),
+        
         "Price": ("p (Market Price)", "green", p_opt),
         "S1 (Marketing)": ("s₁ (Marketing Base-Stock)", "red", s1_opt),
         "S2 (Operations)": ("s₂ (Operations Base-Stock)", "purple", s2_opt),
@@ -357,7 +357,7 @@ def run_ucb_simulation(rounds=None, verbose=True):
         ax.legend(loc="upper right")
         ax.grid(True, alpha=0.3)
     
-    plt.suptitle(f"UCB Decision Variable Convergence (Efficiency: {efficiency:.1f}%)", 
+    plt.suptitle(f"UCB without Principal Decision Variable Convergence (Efficiency: {efficiency:.1f}%)", 
                  fontsize=14, fontweight="bold")
     plt.tight_layout()
     
