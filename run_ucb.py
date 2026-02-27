@@ -1,7 +1,3 @@
-"""
-UCB (Upper Confidence Bound) version of the Split-Principal Supply Chain simulation.
-Compares UCB1 learning algorithm against epsilon-greedy.
-"""
 
 import numpy as np
 import pandas as pd
@@ -17,10 +13,10 @@ import params
 # ============================================
 
 class UCBMixin:
-    """Mixin to add UCB1 action selection to any agent."""
+    
     
     def select_action_ucb(self):
-        """Select action using UCB1 algorithm."""
+        
         # Try untried actions first
         untried = np.flatnonzero(self.counts == 0)
         
@@ -53,7 +49,7 @@ from agents import (
 
 
 class UCBPrincipalAgent(PrincipalAgent, UCBMixin):
-    """Unified Principal with UCB1 learning."""
+    
     
     def __init__(self, model):
         super().__init__(model)
@@ -67,7 +63,7 @@ class UCBPrincipalAgent(PrincipalAgent, UCBMixin):
 
 
 class UCBPrincipalBetaAgent(PrincipalBetaAgent, UCBMixin):
-    """Principal Beta with UCB1 learning."""
+    
     
     def __init__(self, model):
         super().__init__(model)
@@ -78,7 +74,7 @@ class UCBPrincipalBetaAgent(PrincipalBetaAgent, UCBMixin):
 
 
 class UCBPrincipalSigmaAgent(PrincipalSigmaAgent, UCBMixin):
-    """Principal Sigma with UCB1 learning."""
+    
     
     def __init__(self, model):
         super().__init__(model)
@@ -89,7 +85,7 @@ class UCBPrincipalSigmaAgent(PrincipalSigmaAgent, UCBMixin):
 
 
 class UCBMarketingAgent(MarketingAgent, UCBMixin):
-    """Marketing Agent with UCB1 learning."""
+    
     
     def __init__(self, model):
         super().__init__(model)
@@ -103,7 +99,7 @@ class UCBMarketingAgent(MarketingAgent, UCBMixin):
 
 
 class UCBOperationsAgent(OperationsAgent, UCBMixin):
-    """Operations Agent with UCB1 learning."""
+    
     
     def __init__(self, model):
         super().__init__(model)
@@ -125,14 +121,13 @@ from mesa.datacollection import DataCollector
 
 
 def create_ucb_agents(model):
-    """Create UCB agents with unified Principal."""
-    #UCBPrincipalAgent(model)  # Unified principal
+    #Only initialize the Marketing & Operations Agent
     UCBMarketingAgent(model)
     UCBOperationsAgent(model)
 
 
 class UCBSupplyChainModel(TwoStageSupplyChainModel):
-    """Supply chain model using UCB1 learning."""
+   
     
     def __init__(self, seed=None):
         # Skip parent __init__ and set up manually

@@ -1,7 +1,4 @@
-"""
-Run script for the Split-Principal Supply Chain MARL Simulation.
-Uses epsilon-greedy learning algorithm.
-"""
+
 
 import numpy as np
 import pandas as pd
@@ -13,7 +10,7 @@ import params
 
 
 def run_simulation(rounds=None, verbose=True):
-    """Run simulation with epsilon-greedy learning."""
+    
     if rounds is None:
         rounds = params.ROUNDS
     
