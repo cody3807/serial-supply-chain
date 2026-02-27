@@ -1,16 +1,9 @@
-
-
-import numpy as np
-import pandas as pd
 from datetime import datetime
-
 from model import TwoStageSupplyChainModel
-from centralsolver import compute_quick_optimum
+from centralsolver import compute_centralized_optimum
 import params
 
-
 def run_simulation(rounds=None, verbose=True):
-    
     if rounds is None:
         rounds = params.ROUNDS
     
@@ -23,7 +16,7 @@ def run_simulation(rounds=None, verbose=True):
     print("STEP 1: Computing Centralized Benchmark")
     print("-" * 40)
     
-    p_opt, s1_opt, s2_opt, profit_opt, cost_opt = compute_quick_optimum(verbose=True)
+    p_opt, s1_opt, s2_opt, profit_opt, cost_opt = compute_centralized_optimum(verbose=True)
     params.CTOT_OPT = cost_opt
     
     print()
@@ -57,7 +50,7 @@ def run_simulation(rounds=None, verbose=True):
     
     df_model = model.datacollector.get_model_vars_dataframe()
     
-    warmup_period = min(500, rounds // 5)
+    warmup_period = rounds // 5
     df_stable = df_model.iloc[warmup_period:]
     
     avg_cost = df_stable["Total Cost"].mean()
@@ -168,7 +161,5 @@ def run_simulation(rounds=None, verbose=True):
         'profit_opt': profit_opt, 'efficiency': efficiency
     }
 
-
 if __name__ == "__main__":
     model, df_model, results = run_simulation()
-

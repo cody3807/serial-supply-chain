@@ -1,10 +1,7 @@
-
 import numpy as np
-import pandas as pd
-from copy import deepcopy
 
 from model import TwoStageSupplyChainModel
-from centralsolver import compute_quick_optimum
+from centralsolver import compute_centralized_optimum
 import params
 
 
@@ -13,10 +10,7 @@ import params
 # ============================================
 
 class UCBMixin:
-    
-    
     def select_action_ucb(self):
-        
         # Try untried actions first
         untried = np.flatnonzero(self.counts == 0)
         
@@ -43,14 +37,10 @@ class UCBMixin:
 # ============================================
 
 from agents import (
-    PrincipalAgent, PrincipalBetaAgent, PrincipalSigmaAgent,
-    MarketingAgent, OperationsAgent
-)
+    PrincipalAgent, MarketingAgent, OperationsAgent)
 
 
 class UCBPrincipalAgent(PrincipalAgent, UCBMixin):
-    
-    
     def __init__(self, model):
         super().__init__(model)
         self.name = "Principal (UCB)"
@@ -62,31 +52,11 @@ class UCBPrincipalAgent(PrincipalAgent, UCBMixin):
             self.sigma = float(self.action[1])
 
 
-class UCBPrincipalBetaAgent(PrincipalBetaAgent, UCBMixin):
-    
-    
-    def __init__(self, model):
-        super().__init__(model)
-        self.name = "Principal Beta (UCB)"
-    
-    def select_action(self):
-        self.select_action_ucb()
 
 
-class UCBPrincipalSigmaAgent(PrincipalSigmaAgent, UCBMixin):
-    
-    
-    def __init__(self, model):
-        super().__init__(model)
-        self.name = "Principal Sigma (UCB)"
-    
-    def select_action(self):
-        self.select_action_ucb()
 
 
 class UCBMarketingAgent(MarketingAgent, UCBMixin):
-    
-    
     def __init__(self, model):
         super().__init__(model)
         self.name = "Marketing (UCB)"
@@ -99,8 +69,6 @@ class UCBMarketingAgent(MarketingAgent, UCBMixin):
 
 
 class UCBOperationsAgent(OperationsAgent, UCBMixin):
-    
-    
     def __init__(self, model):
         super().__init__(model)
         self.name = "Operations (UCB)"
@@ -108,8 +76,7 @@ class UCBOperationsAgent(OperationsAgent, UCBMixin):
     def select_action(self):
         self.select_action_ucb()
         if self.action is not None:
-            self.s2 = int(self.action[0])
-            self.tp = int(self.action[1])
+            self.s2 = int(self.action)
 
 
 # ============================================
@@ -119,7 +86,6 @@ class UCBOperationsAgent(OperationsAgent, UCBMixin):
 from mesa import Model
 from mesa.datacollection import DataCollector
 
-
 def create_ucb_agents(model):
     #Only initialize the Marketing & Operations Agent
     UCBMarketingAgent(model)
@@ -127,11 +93,7 @@ def create_ucb_agents(model):
 
 
 class UCBSupplyChainModel(TwoStageSupplyChainModel):
-   
-    
     def __init__(self, seed=None):
-        # Skip parent __init__ and set up manually
-        # Pass seed to Mesa's Model to make agent random choices reproducible
         Model.__init__(self, seed=seed if seed is not None else params.SEED)
         
         # Simulation control
@@ -216,7 +178,6 @@ class UCBSupplyChainModel(TwoStageSupplyChainModel):
 # ============================================
 
 def run_ucb_simulation(rounds=None, verbose=True):
-    """Run simulation with UCB learning."""
     if rounds is None:
         rounds = params.ROUNDS
     
@@ -229,7 +190,7 @@ def run_ucb_simulation(rounds=None, verbose=True):
     print("STEP 1: Computing Centralized Benchmark")
     print("-" * 40)
     
-    p_opt, s1_opt, s2_opt, profit_opt, cost_opt = compute_quick_optimum(verbose=True)
+    p_opt, s1_opt, s2_opt, profit_opt, cost_opt = compute_centralized_optimum(verbose=True)
     params.CTOT_OPT = cost_opt
     
     print()
@@ -374,7 +335,6 @@ def run_ucb_simulation(rounds=None, verbose=True):
         'p_opt': p_opt, 's1_opt': s1_opt, 's2_opt': s2_opt,
         'profit_opt': profit_opt, 'efficiency': efficiency
     }
-
 
 if __name__ == "__main__":
     model, df_model, results = run_ucb_simulation()

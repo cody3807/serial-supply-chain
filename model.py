@@ -1,5 +1,3 @@
-
-
 import numpy as np
 from mesa import Model
 from mesa.datacollection import DataCollector
@@ -7,15 +5,11 @@ from mesa.datacollection import DataCollector
 from agents import (
     
     MarketingAgent, OperationsAgent,
-    GreedyPAgent, GreedyMAgent, GreedyOAgent
+    GreedyMAgent, GreedyOAgent
 )
 import params
 
-
 def create_agents(model, agent_types):
-    
-    # Ajanları doğrudan oluşturuyoruz (create_agents metodu yerine)
-    
     for agent_type in agent_types:
         if agent_type == "principal":
             # Unified Principal agent
@@ -26,15 +20,11 @@ def create_agents(model, agent_types):
             
         elif agent_type == "greedy_o":
             OperationsAgent(model)
-            
-        # Legacy types
-        elif agent_type == "greedy_p":
-            GreedyPAgent(model)
-class TwoStageSupplyChainModel(Model):
 
-    
+class TwoStageSupplyChainModel(Model):
     def __init__(self, agent_types=("principal", "greedy_m", "greedy_o")):
-        super().__init__()
+        super().__init__(seed=params.SEED)  
+      
         
         # Simulation control
         self.rng = np.random.default_rng(params.SEED)
@@ -190,11 +180,11 @@ class TwoStageSupplyChainModel(Model):
         )
         
         # Operations: h2×(I1+I2) - echelon inventory = all downstream
-        # Gets paid only for shipped units, not all production!
+        # Gets paid only for shipped units, not all production.
         self.reward_operations = OperationsAgent.compute_reward(
             beta=self.beta,
             x=self.x,
-            shipped=self.shipment,  # Only get paid for what's shipped!
+            shipped=self.shipment,  # Only get paid for what's shipped
             k=params.k,
             h2=params.H2,
             I1=self.I1,  # Echelon: h2×(I1+I2)
@@ -208,7 +198,8 @@ class TwoStageSupplyChainModel(Model):
         # Total cost = all costs - revenue
         revenue = self.p * self.sales
         production_cost = params.k * (self.x ** 2)
-        holding_costs = params.H2 * (self.I2) + (params.H1-params.H2) * self.I1
+        holding_costs = params.H2 * (self.I1 +self.I2) + (params.H1-params.H2) * self.I1 # with Echelon inventory
+        #holding_costs = params.H2 * (self.I2) + (params.H1-params.H2) * self.I1 # without Echelon inventory
         backorder_cost = params.P_BO * self.backorders
         
         self.total_cost = production_cost + holding_costs + backorder_cost - revenue
@@ -250,5 +241,4 @@ class TwoStageSupplyChainModel(Model):
         self.t += 1
         
         # Collect data
-        
         self.datacollector.collect(self)
