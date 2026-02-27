@@ -1,8 +1,3 @@
-"""
-Parameter configuration for the two-stage serial supply chain
-Split-Principal Architecture (Principal Beta & Principal Sigma)
-Based on Cachon & Zipkin (1999) and Kouvelis & Lariviere (2000)
-"""
 
 import numpy as np
 
@@ -27,11 +22,7 @@ b = 1.5           # Price sensitivity coefficient
 sigma_d = 10      # Demand standard deviation
 
 def sample_demand(rng, price):
-    """
-    Generate price-dependent stochastic demand.
-    D ~ Normal(mean = a - b*p, std = sigma_d)
-    Demand is constrained to be non-negative.
-    """
+
     mean = max(0, a - b * price)
     demand = rng.normal(mean, sigma_d)
     return max(0, int(round(demand)))
@@ -68,22 +59,19 @@ SIGMA_MAX = 1
 sigma_range = np.arange(SIGMA_MIN, SIGMA_MAX + .1, .05, dtype=float)  # 0,5,10,...,30 (7 values)
 
 def action_space():
-    """Return array of discrete base-stock levels (legacy)"""
+
     return s_range
 
 def action_space_principal_beta():
-    """Return array of discrete beta (buy price) values"""
+    
     return beta_range
 
 def action_space_principal_sigma():
-    """Return array of discrete sigma (sell price) values"""
+    
     return sigma_range
 
 def action_space_principal():
-    """
-    Return array of (beta, sigma) tuples for unified Principal agent.
-    Principal controls both transfer prices to minimize total system cost.
-    """
+
     action_space = []
     for beta in beta_range:
         for sigma in sigma_range:
@@ -91,10 +79,7 @@ def action_space_principal():
     return np.array(action_space)
 
 def action_space_marketing():
-    """
-    Return array of (s1, p) tuples for Marketing agent.
-    s1: base-stock level, p: market price
-    """
+
     action_space = []
     for s1 in s1_range:
         for p in p_range:
@@ -102,7 +87,7 @@ def action_space_marketing():
     return np.array(action_space)
 
 def action_space_operations():
-    """Return array of discrete s2 base-stock levels for Operations agent."""
+  
     action_space = []
     for s2 in s2_range:
         for tp in tp_range: 
@@ -116,7 +101,7 @@ EPS_START = 0.90   # More exploration initially
 EPS_END = 0.01     # Small residual exploration
 
 def epsilon_at(t, rounds):
-    """Linear decay of epsilon from EPS_START → EPS_END over [0, rounds-1]"""
+   
     if rounds <= 1:
         return EPS_END
     frac = np.clip(t, 0, rounds - 1) / (rounds - 1)

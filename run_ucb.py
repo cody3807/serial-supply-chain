@@ -8,7 +8,7 @@ import pandas as pd
 from copy import deepcopy
 
 from model import TwoStageSupplyChainModel
-from centralsolver import compute_quick_optimum
+from centralsolver import compute_centralized_optimum
 import params
 
 
@@ -234,7 +234,7 @@ def run_ucb_simulation(rounds=None, verbose=True):
     print("STEP 1: Computing Centralized Benchmark")
     print("-" * 40)
     
-    p_opt, s1_opt, s2_opt, profit_opt, cost_opt = compute_quick_optimum(verbose=True)
+    p_opt, s1_opt, s2_opt, profit_opt, cost_opt = compute_centralized_optimum(verbose=True)
     params.CTOT_OPT = cost_opt
     
     print()
