@@ -1,12 +1,4 @@
-"""
-UCB (Upper Confidence Bound) version of the Split-Principal Supply Chain simulation.
-Compares UCB1 learning algorithm against epsilon-greedy.
-"""
-
 import numpy as np
-import pandas as pd
-from copy import deepcopy
-
 from model import TwoStageSupplyChainModel
 from centralsolver import compute_centralized_optimum
 import params
@@ -47,46 +39,8 @@ class UCBMixin:
 # ============================================
 
 from agents import (
-    PrincipalAgent, PrincipalBetaAgent, PrincipalSigmaAgent,
     MarketingAgent, OperationsAgent
 )
-
-
-class UCBPrincipalAgent(PrincipalAgent, UCBMixin):
-    """Unified Principal with UCB1 learning."""
-    
-    def __init__(self, model):
-        super().__init__(model)
-        self.name = "Principal (UCB)"
-    
-    def select_action(self):
-        self.select_action_ucb()
-        if self.action is not None:
-            self.beta = float(self.action[0])
-            self.sigma = float(self.action[1])
-
-
-class UCBPrincipalBetaAgent(PrincipalBetaAgent, UCBMixin):
-    """Principal Beta with UCB1 learning."""
-    
-    def __init__(self, model):
-        super().__init__(model)
-        self.name = "Principal Beta (UCB)"
-    
-    def select_action(self):
-        self.select_action_ucb()
-
-
-class UCBPrincipalSigmaAgent(PrincipalSigmaAgent, UCBMixin):
-    """Principal Sigma with UCB1 learning."""
-    
-    def __init__(self, model):
-        super().__init__(model)
-        self.name = "Principal Sigma (UCB)"
-    
-    def select_action(self):
-        self.select_action_ucb()
-
 
 class UCBMarketingAgent(MarketingAgent, UCBMixin):
     """Marketing Agent with UCB1 learning."""

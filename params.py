@@ -1,15 +1,9 @@
 
 import numpy as np
 
-# ============================================
-# Cost Structure (Realistic)
-# ============================================
-# ============================================
-# Cost Structure (Realistic)
-# ============================================
 H1 = 5.0          # Retailer (Marketing) holding cost
 H2 = 3.0          # Supplier (Operations) holding cost
-P_BO = 30       # Total backorder penalty (π) - HUGE
+P_BO = 30       # Total backorder penalty (π)
 ALPHA = 0.5       # Penalty split ratio
 k = 0.1       # Convex production cost coefficient
 
@@ -17,7 +11,7 @@ k = 0.1       # Convex production cost coefficient
 # Demand Parameters (Price-dependent Normal)
 # D ~ Normal(a - b*p, sigma_d)
 # ============================================
-a = 120         # Demand intercept - HUGE
+a = 120         # Demand intercept 
 b = 1.5           # Price sensitivity coefficient  
 sigma_d = 10      # Demand standard deviation
 
@@ -28,10 +22,10 @@ def sample_demand(rng, price):
     return max(0, int(round(demand)))
 
 # ============================================
-# Action Spaces (WIDE - for realistic testing)
+# Action Spaces 
 # ============================================
 
-# Base-stock for Marketing (s1) - demand approx 1100
+# Base-stock for Marketing (s1)
 S1_LOWER = 20
 S1_UPPER = 120
 s1_range = np.arange(S1_LOWER, S1_UPPER + 1, 5, dtype=int)
@@ -40,23 +34,21 @@ s1_range = np.arange(S1_LOWER, S1_UPPER + 1, 5, dtype=int)
 S2_LOWER = 20
 S2_UPPER = 120
 s2_range = np.arange(S2_LOWER, S2_UPPER + 1, 5, dtype=int)
-
-# Legacy combined range (for backwards compatibility)
 s_range = s1_range
 
 # Price range for Marketing - wide range
-p_range = np.array([25, 30, 35, 40, 45, 50, 55, 60, 65], dtype=int)  # 9 values
-tp_range = np.array([20,25,30,35,40,45,50,55,60], dtype=int)  # 9 values
+p_range = np.array([25, 30, 35, 40, 45, 50, 55, 60, 65], dtype=int)  
+tp_range = np.array([20,25,30,35,40,45,50,55,60], dtype=int) 
 
-# Transfer price ranges - VERY WIDE for full exploration
+# Transfer price ranges
 BETA_MIN = 0
 BETA_MAX = 15
-beta_range = np.arange(BETA_MIN, BETA_MAX + 1, 1, dtype=int)  # 0,5,10,...,30 (7 values)
+beta_range = np.arange(BETA_MIN, BETA_MAX + 1, 1, dtype=int) 
 
-# Sigma - VERY WIDE range
+# Sigma
 SIGMA_MIN = 0
 SIGMA_MAX = 1
-sigma_range = np.arange(SIGMA_MIN, SIGMA_MAX + .1, .05, dtype=float)  # 0,5,10,...,30 (7 values)
+sigma_range = np.arange(SIGMA_MIN, SIGMA_MAX + .1, .05, dtype=float)  
 
 def action_space():
 
@@ -117,6 +109,4 @@ WARMUP = 1000     # Warmup period for benchmark estimation
 # ============================================
 # Centralized Benchmark (computed at import time)
 # ============================================
-# Note: The benchmark will be computed in centralsolver.py
-# and imported separately to avoid circular dependencies
 CTOT_OPT = 0.0  # Placeholder - will be set after running centralsolver
